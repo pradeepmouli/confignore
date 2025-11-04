@@ -1,0 +1,21 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": ["config:recommended"],
+  "rangeStrategy": "bump",
+  "automerge": false,
+  "rebaseWhen": "behind-base-branch",
+  "packageRules": [
+    {
+      "matchDepTypes": ["devDependencies"],
+      "automerge": true,
+      "automergeType": "branch",
+      "minimumConfidence": "high",
+      "prHourlyLimit": 5
+    },
+    {
+      "matchManagers": ["npm"],
+      "matchUpdateTypes": ["major"],
+      "automerge": false
+    }
+  ]
+}

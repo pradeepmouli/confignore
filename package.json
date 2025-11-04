@@ -1,0 +1,159 @@
+{
+	"name": "confignore",
+	"displayName": "Confignore",
+	"description": "Add files and folders to ignore files via context menu",
+	"version": "0.0.2",
+	"publisher": "pmouli",
+	"license": "MIT",
+	"repository": {
+		"type": "git",
+		"url": "https://github.com/pradeepmouli/confignore"
+	},
+	"engines": {
+		"vscode": "^1.105.0"
+	},
+	"categories": [
+		"Other"
+	],
+	"activationEvents": [
+		"onStartupFinished",
+		"onCommand:confignore.addToIgnore.quickPick",
+		"onCommand:confignore.addToIgnore.git",
+		"onCommand:confignore.addToIgnore.docker",
+		"onCommand:confignore.addToIgnore.eslint",
+		"onCommand:confignore.addToIgnore.prettier",
+		"onCommand:confignore.addToIgnore.npm",
+		"onCommand:confignore.addToIgnore.stylelint",
+		"onCommand:confignore.addToIgnore.vscode"
+	],
+	"main": "./dist/extension.js",
+	"contributes": {
+		"submenus": [
+			{
+				"id": "confignore.submenu",
+				"label": "Add to Ignore"
+			}
+		],
+		"commands": [
+			{
+				"command": "confignore.addToIgnore.git",
+				"title": "git (.gitignore)",
+				"category": "confignore"
+			},
+			{
+				"command": "confignore.addToIgnore.docker",
+				"title": "docker (.dockerignore)",
+				"category": "confignore"
+			},
+			{
+				"command": "confignore.addToIgnore.eslint",
+				"title": "eslint (.eslintignore)",
+				"category": "confignore"
+			},
+			{
+				"command": "confignore.addToIgnore.prettier",
+				"title": "prettier (.prettierignore)",
+				"category": "confignore"
+			},
+			{
+				"command": "confignore.addToIgnore.npm",
+				"title": "npm (.npmignore)",
+				"category": "confignore"
+			},
+			{
+				"command": "confignore.addToIgnore.stylelint",
+				"title": "stylelint (.stylelintignore)",
+				"category": "confignore"
+			},
+			{
+				"command": "confignore.addToIgnore.vscode",
+				"title": "vscode (.vscodeignore)",
+				"category": "confignore"
+			},
+			{
+				"command": "confignore.addToIgnore.tsconfig",
+				"title": "tsconfig (tsconfig.json 'exclude' array)",
+				"category": "confignore"
+			}
+		],
+		"menus": {
+			"explorer/context": [
+				{
+					"submenu": "confignore.submenu",
+					"group": "navigation@5"
+				}
+
+			],
+			"confignore.submenu": [
+				{
+					"command": "confignore.addToIgnore.quickPick",
+					"group": "0_pick"
+				},
+				{
+					"command": "confignore.addToIgnore.git",
+					"group": "1_targets",
+					"when": "confignore.hasGit"
+				},
+				{
+					"command": "confignore.addToIgnore.docker",
+					"group": "1_targets",
+					"when": "confignore.hasDocker"
+				},
+				{
+					"command": "confignore.addToIgnore.eslint",
+					"group": "1_targets",
+					"when": "confignore.hasEslint"
+				},
+				{
+					"command": "confignore.addToIgnore.prettier",
+					"group": "1_targets",
+					"when": "confignore.hasPrettier"
+				},
+				{
+					"command": "confignore.addToIgnore.npm",
+					"group": "1_targets",
+					"when": "confignore.hasNpm"
+				},
+				{
+					"command": "confignore.addToIgnore.stylelint",
+					"group": "1_targets",
+					"when": "confignore.hasStylelint"
+				},
+				{
+					"command": "confignore.addToIgnore.vscode",
+					"group": "1_targets",
+					"when": "confignore.hasVscode"
+				}
+			]
+		}
+	},
+	"scripts": {
+		"vscode:prepublish": "npm run package",
+		"compile": "npm run check-types && npm run lint && node esbuild.js",
+		"watch": "npm-run-all -p watch:*",
+		"watch:esbuild": "node esbuild.js --watch",
+		"watch:tsc": "tsc --noEmit --watch --project tsconfig.json",
+		"package": "npm run check-types && npm run lint && node esbuild.js --production",
+		"compile-tests": "tsc -p . --outDir out",
+		"watch-tests": "tsc -p . -w --outDir out",
+		"pretest": "npm run compile-tests && npm run compile && npm run lint",
+		"check-types": "tsc --noEmit",
+		"lint": "eslint src",
+		"test": "vscode-test"
+	},
+	"devDependencies": {
+		"@types/mocha": "^10.0.10",
+		"@types/node": "22.x",
+		"@types/vscode": "^1.105.0",
+		"@typescript-eslint/eslint-plugin": "^8.45.0",
+		"@typescript-eslint/parser": "^8.45.0",
+		"@vscode/test-cli": "^0.0.11",
+		"@vscode/test-electron": "^2.5.2",
+		"@vscode/vsce": "^3.6.2",
+		"esbuild": "^0.25.10",
+		"eslint": "^9.36.0",
+		"jiti": "^2.6.1",
+		"npm-run-all": "^4.1.5",
+		"typescript": "^5.9.3"
+	}
+}
