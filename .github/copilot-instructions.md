@@ -104,3 +104,10 @@ Before starting a new task in the above plan, update progress in the plan.
 - Work through each checklist item systematically.
 - Keep communication concise and focused.
 - Follow development best practices.
+
+## Active Technologies
+- TypeScript (^5.9.x) targeting VS Code engine ^1.105.0 + VS Code extension API; esbuild bundling; ESLint for linting; TypeScript compiler for types (001-ignore-visibility-config)
+- Files in workspace (ignore files, config files); no external storage (001-ignore-visibility-config)
+
+## Recent Changes
+- 001-ignore-visibility-config: Added TypeScript (^5.9.x) targeting VS Code engine ^1.105.0 + VS Code extension API; esbuild bundling; ESLint for linting; TypeScript compiler for types

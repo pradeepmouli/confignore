@@ -2,7 +2,7 @@
 	"name": "confignore",
 	"displayName": "Confignore",
 	"description": "Add files and folders to ignore files via context menu",
-	"version": "0.0.2",
+	"version": "0.0.3",
 	"publisher": "pmouli",
 	"license": "MIT",
 	"repository": {
@@ -24,7 +24,9 @@
 		"onCommand:confignore.addToIgnore.prettier",
 		"onCommand:confignore.addToIgnore.npm",
 		"onCommand:confignore.addToIgnore.stylelint",
-		"onCommand:confignore.addToIgnore.vscode"
+		"onCommand:confignore.addToIgnore.vscode",
+		"onCommand:confignore.addToIgnore.tsconfig",
+		"onCommand:confignore.include"
 	],
 	"main": "./dist/extension.js",
 	"contributes": {
@@ -71,12 +73,17 @@
 				"category": "confignore"
 			},
 			{
-				"command": "confignore.addToIgnore.tsconfig",
-				"title": "tsconfig (tsconfig.json 'exclude' array)",
-				"category": "confignore"
-			}
-		],
-		"menus": {
+			"command": "confignore.addToIgnore.tsconfig",
+			"title": "tsconfig (tsconfig.json 'exclude' array)",
+			"category": "confignore"
+		},
+		{
+			"command": "confignore.include",
+			"title": "Include (remove from exclusions)",
+			"category": "confignore"
+		}
+	],
+	"menus": {
 			"explorer/context": [
 				{
 					"submenu": "confignore.submenu",
@@ -87,42 +94,53 @@
 			"confignore.submenu": [
 				{
 					"command": "confignore.addToIgnore.quickPick",
-					"group": "0_pick"
+					"group": "0_pick",
+					"when": "!confignore.selectionExcluded"
+				},
+				{
+					"command": "confignore.include",
+					"group": "0_pick",
+					"when": "confignore.selectionExcluded"
 				},
 				{
 					"command": "confignore.addToIgnore.git",
 					"group": "1_targets",
-					"when": "confignore.hasGit"
+					"when": "confignore.hasGit && !confignore.selectionExcluded"
 				},
 				{
 					"command": "confignore.addToIgnore.docker",
 					"group": "1_targets",
-					"when": "confignore.hasDocker"
+					"when": "confignore.hasDocker && !confignore.selectionExcluded"
 				},
 				{
 					"command": "confignore.addToIgnore.eslint",
 					"group": "1_targets",
-					"when": "confignore.hasEslint"
+					"when": "confignore.hasEslint && !confignore.selectionExcluded"
 				},
 				{
 					"command": "confignore.addToIgnore.prettier",
 					"group": "1_targets",
-					"when": "confignore.hasPrettier"
+					"when": "confignore.hasPrettier && !confignore.selectionExcluded"
 				},
 				{
 					"command": "confignore.addToIgnore.npm",
 					"group": "1_targets",
-					"when": "confignore.hasNpm"
+					"when": "confignore.hasNpm && !confignore.selectionExcluded"
 				},
 				{
 					"command": "confignore.addToIgnore.stylelint",
 					"group": "1_targets",
-					"when": "confignore.hasStylelint"
+					"when": "confignore.hasStylelint && !confignore.selectionExcluded"
 				},
 				{
 					"command": "confignore.addToIgnore.vscode",
 					"group": "1_targets",
-					"when": "confignore.hasVscode"
+					"when": "confignore.hasVscode && !confignore.selectionExcluded"
+				},
+				{
+					"command": "confignore.addToIgnore.tsconfig",
+					"group": "1_targets",
+					"when": "confignore.hasTsconfig && !confignore.selectionExcluded"
 				}
 			]
 		}
@@ -139,7 +157,9 @@
 		"pretest": "npm run compile-tests && npm run compile && npm run lint",
 		"check-types": "tsc --noEmit",
 		"lint": "eslint src",
-		"test": "vscode-test"
+		"test": "vscode-test",
+		"vsce:package": "vsce package --no-dependencies",
+		"vsce:publish": "vsce publish --no-dependencies"
 	},
 	"devDependencies": {
 		"@types/mocha": "^10.0.10",
