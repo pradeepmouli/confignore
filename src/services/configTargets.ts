@@ -12,7 +12,7 @@ import * as path from 'path';
  * @returns true if excluded, false otherwise
  * 
  * NOTE: This is a simplified implementation that needs enhancement:
- * - Proper glob pattern matching (e.g., "**\/*.test.ts")
+ * - Proper glob pattern matching (e.g., "**/*.test.ts")
  * - Support for negation patterns (!)
  * - Handle tsconfig extends and references
  */
