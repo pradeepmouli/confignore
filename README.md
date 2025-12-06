@@ -1,10 +1,9 @@
 # Confignore
 
-Quickly add selected files and folders to common ignore files and config-based exclusions from the Explorer context menu. Automatically detects if selections are already ignored and adapts menu visibility.
+Quickly add selected files and folders to common ignore files and config-based exclusions from the Explorer context menu.
 
 ## Features
 
-- **Smart menu visibility**: Automatically hides "Ignore" actions when selections are already excluded; shows "Include" action instead
 - **Right-click any file or folder** in the Explorer and choose actions from the "Add to Ignore" submenu
 - **Ignore file support**:
   - .gitignore
@@ -14,7 +13,7 @@ Quickly add selected files and folders to common ignore files and config-based e
   - .npmignore
   - .stylelintignore
   - .vscodeignore
-- **Config-based exclusion support** (new in 0.0.3):
+- **Config-based exclusion support**:
   - tsconfig.json (exclude array)
   - .eslintrc.json (ignorePatterns)
   - .prettierrc / .prettierrc.json (overrides excludedFiles)
@@ -24,24 +23,27 @@ Quickly add selected files and folders to common ignore files and config-based e
 - Creates ignore files if they don't exist and appends unique entries
 - **Never auto-creates config files**: Actions are hidden if configs don't exist
 
+## Extension Settings
+
+This extension contributes the following settings:
+
+* `confignore.enableSmartMenuVisibility`: Enable smart menu visibility based on file exclusion state. When enabled, the extension automatically hides "Ignore" actions when selections are already excluded and shows "Include" action instead. **This feature is experimental and currently has known issues, so it is disabled by default.**
+
 ## How It Works
 
-The extension evaluates each selection against supported sources and determines effective exclusion state. Precedence order: config-based excludes > project ignore files > workspace settings. Menu visibility adapts accordingly:
+The extension provides quick access to add files and folders to various ignore files directly from the Explorer context menu.
+
+When the experimental smart menu visibility feature is enabled (via `confignore.enableSmartMenuVisibility`), the extension evaluates each selection against supported sources and determines effective exclusion state:
 
 - When a selection is **excluded**: "Ignore" actions are hidden, "Include" is shown
 - When a selection is **not excluded**: "Ignore" actions are shown, "Include" is hidden
 - With **mixed-state multi-select**: both groups may appear based on majority state
 
-## Requirements
-
-No additional requirements. The extension uses built-in VS Code APIs.
-
-## Extension Settings
-
-This extension currently contributes no settings.
+**Note**: The smart menu visibility feature is currently disabled by default due to known issues. You can enable it in settings if you want to try it out.
 
 ## Known Issues
 
+- **Smart menu visibility feature has known issues**: The experimental feature that automatically shows/hides menu items based on exclusion state is currently disabled by default. It can be enabled via the `confignore.enableSmartMenuVisibility` setting, but may not work correctly in all scenarios.
 - Entries already covered by a broader ignore pattern (e.g., a parent folder) are not detected; duplicates by exact line are avoided.
 - Negation patterns in ignore files (lines starting with `!`) are recognized but not fully tested across all edge cases.
 

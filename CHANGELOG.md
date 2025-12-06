@@ -4,6 +4,16 @@ All notable changes to the "confignore" extension will be documented in this fil
 
 Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how to structure this file.
 
+## [Unreleased]
+
+### Changed
+- Smart menu visibility feature is now **disabled by default** due to known issues
+- Added feature flag `confignore.enableSmartMenuVisibility` to control smart menu visibility
+- Updated documentation to clarify experimental status of smart menu visibility
+
+### Fixed
+- Source code structure now properly committed to repository (was missing due to .gitignore)
+
 ## [0.0.3] - 2025-11-04
 
 ### Added
