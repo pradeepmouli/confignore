@@ -30,6 +30,16 @@
 	],
 	"main": "./dist/extension.js",
 	"contributes": {
+		"configuration": {
+			"title": "Confignore",
+			"properties": {
+				"confignore.enableSmartMenuVisibility": {
+					"type": "boolean",
+					"default": false,
+					"description": "Enable smart menu visibility based on file exclusion state. This feature is experimental and currently has known issues."
+				}
+			}
+		},
 		"submenus": [
 			{
 				"id": "confignore.submenu",
@@ -37,6 +47,11 @@
 			}
 		],
 		"commands": [
+			{
+				"command": "confignore.addToIgnore.quickPick",
+				"title": "Quick Pick (choose ignore file)",
+				"category": "confignore"
+			},
 			{
 				"command": "confignore.addToIgnore.git",
 				"title": "git (.gitignore)",
