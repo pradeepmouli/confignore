@@ -3,7 +3,7 @@
  */
 
 import { Uri, workspace } from 'vscode';
-import { EffectiveState, Source } from '../models/types';
+import { EffectiveState } from '../models/types';
 
 /**
  * Resolve the effective state for a single URI
