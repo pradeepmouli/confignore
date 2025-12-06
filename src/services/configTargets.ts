@@ -10,6 +10,11 @@ import * as path from 'path';
  * @param tsconfigPath Path to tsconfig.json
  * @param targetPath Path to check for exclusion
  * @returns true if excluded, false otherwise
+ * 
+ * NOTE: This is a simplified implementation that needs enhancement:
+ * - Proper glob pattern matching (e.g., "**\/*.test.ts")
+ * - Support for negation patterns (!)
+ * - Handle tsconfig extends and references
  */
 export async function tsconfigExcludes(tsconfigPath: string, targetPath: string): Promise<boolean> {
 	try {
@@ -20,8 +25,8 @@ export async function tsconfigExcludes(tsconfigPath: string, targetPath: string)
 			return false;
 		}
 		
-		// Simple path matching - just check if targetPath is in exclude array
-		// In a real implementation, would need glob matching
+		// Simple path matching - just check if targetPath starts with pattern
+		// TODO: Implement proper glob matching for patterns like "**\/*.test.ts"
 		const relativePath = path.relative(path.dirname(tsconfigPath), targetPath);
 		return config.exclude.some((pattern: string) => relativePath.startsWith(pattern));
 	} catch {

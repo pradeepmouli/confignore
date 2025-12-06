@@ -9,6 +9,12 @@ import { EffectiveState, Source } from '../models/types';
  * Resolve the effective state for a single URI
  * @param uri The URI to check
  * @returns The effective state
+ * 
+ * NOTE: This is a minimal implementation. Full implementation needs to:
+ * - Check all ignore files (.gitignore, .dockerignore, etc.)
+ * - Check config-based exclusions (tsconfig.json, .eslintrc.json, etc.)
+ * - Apply precedence rules (config > ignore files > workspace settings)
+ * - Handle glob patterns and negation patterns
  */
 export async function resolveState(uri: Uri): Promise<EffectiveState> {
 	const workspaceFolder = workspace.getWorkspaceFolder(uri);
@@ -25,6 +31,7 @@ export async function resolveState(uri: Uri): Promise<EffectiveState> {
 	}
 	
 	// TODO: Implement actual state resolution by checking ignore files and configs
+	// This is the core of the smart menu visibility feature that needs to be completed
 	// For now, return a default state
 	return {
 		path: uri,

@@ -247,6 +247,12 @@ async function addToTsconfigExclude(uri?: vscode.Uri): Promise<void> {
 
 /**
  * Include command - remove from exclusions
+ * NOTE: This command is a placeholder and not yet implemented.
+ * It requires:
+ * - Detection of which source(s) are excluding the selection
+ * - Logic to remove entries from ignore files
+ * - Logic to remove from config-based exclusions (tsconfig, eslint, prettier)
+ * - Proper handling of glob patterns and negation patterns
  */
 async function includeCommand(uri?: vscode.Uri): Promise<void> {
 	vscode.window.showInformationMessage('Include functionality not yet implemented');
