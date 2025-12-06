@@ -26,7 +26,7 @@ export async function tsconfigExcludes(tsconfigPath: string, targetPath: string)
 		}
 		
 		// Simple path matching - just check if targetPath starts with pattern
-		// TODO: Implement proper glob matching for patterns like "**\/*.test.ts"
+		// TODO: Implement proper glob matching for patterns like "**/*.test.ts"
 		const relativePath = path.relative(path.dirname(tsconfigPath), targetPath);
 		return config.exclude.some((pattern: string) => relativePath.startsWith(pattern));
 	} catch {
