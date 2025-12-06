@@ -6,7 +6,7 @@
 import * as vscode from 'vscode';
 import * as path from 'path';
 import * as fs from 'fs/promises';
-import { resolveState, resolveStates } from './services/stateResolver';
+import { resolveState } from './services/stateResolver';
 import { updateContextKeys, clearContextKeys } from './services/contextKeys';
 
 let outputChannel: vscode.OutputChannel;
