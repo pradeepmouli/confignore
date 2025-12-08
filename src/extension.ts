@@ -1,0 +1,337 @@
+// The module 'vscode' contains the VS Code extensibility API
+// Import the module and reference it with the alias vscode in your code below
+import * as path from 'path';
+import * as vscode from 'vscode';
+import { addToTsconfigExclude, detectConfigTargetsFor, guardMissingConfig, removeFromEslintIgnore, removeFromPrettierExcluded, removeFromTsconfigExclude } from './services/configTargets';
+import { clearContextKeys, updateContextKeys } from './services/contextKeys';
+import { resolveStates } from './services/stateResolver';
+
+type IgnoreKey = 'git' | 'docker' | 'eslint' | 'prettier' | 'npm' | 'stylelint' | 'vscode';
+
+const IGNORE_MAP: Record<IgnoreKey, { file: string; label: string; contextKey: string; }> = {
+	git: { file: '.gitignore', label: 'Git', contextKey: 'confignore.hasGit' },
+	docker: { file: '.dockerignore', label: 'Docker', contextKey: 'confignore.hasDocker' },
+	eslint: { file: '.eslintignore', label: 'ESLint', contextKey: 'confignore.hasEslint' },
+	prettier: { file: '.prettierignore', label: 'Prettier', contextKey: 'confignore.hasPrettier' },
+	npm: { file: '.npmignore', label: 'npm', contextKey: 'confignore.hasNpm' },
+	stylelint: { file: '.stylelintignore', label: 'Stylelint', contextKey: 'confignore.hasStylelint' },
+	vscode: { file: '.vscodeignore', label: 'VS Code', contextKey: 'confignore.hasVscode' },
+};
+
+async function setContext(key: string, value: boolean) {
+	await vscode.commands.executeCommand('setContext', key, value);
+}
+
+async function fileExists(uri: vscode.Uri): Promise<boolean> {
+	try {
+		await vscode.workspace.fs.stat(uri);
+		return true;
+	} catch {
+		return false;
+	}
+}
+
+async function dirExists(uri: vscode.Uri): Promise<boolean> {
+	try {
+		const s = await vscode.workspace.fs.stat(uri);
+		return (s.type & vscode.FileType.Directory) === vscode.FileType.Directory;
+	} catch {
+		return false;
+	}
+}
+
+async function detectCapabilities() {
+	const folders = vscode.workspace.workspaceFolders ?? [];
+	const states: Record<IgnoreKey, boolean> = {
+		git: false,
+		docker: false,
+		eslint: false,
+		prettier: false,
+		npm: false,
+		stylelint: false,
+		vscode: false,
+	};
+
+	if (folders.length === 0) {
+		// no workspace -> set all false
+		await Promise.all(Object.values(IGNORE_MAP).map(m => setContext(m.contextKey, false)));
+		return states;
+	}
+
+	// Search across all folders; enable if any folder suggests relevance
+	const patterns = {
+		docker: ['**/.dockerignore', '**/Dockerfile*', '**/docker-compose*.y?(a)ml'],
+		eslint: ['**/.eslintignore', '**/.eslintrc*', '**/eslint.config.*'],
+		prettier: ['**/.prettierignore', '**/.prettierrc*', '**/prettier.config.*'],
+		stylelint: ['**/.stylelintignore', '**/.stylelintrc*', '**/stylelint.config.*'],
+	} as const;
+
+	// git
+	for (const f of folders) {
+		const hasGitIgnore = await fileExists(vscode.Uri.joinPath(f.uri, '.gitignore'));
+		const hasGitDir = await dirExists(vscode.Uri.joinPath(f.uri, '.git'));
+		if (hasGitIgnore || hasGitDir) { states.git = true; break; }
+	}
+
+	// docker
+	if ((await vscode.workspace.findFiles(`{${patterns.docker.join(',')}}`, '**/node_modules/**', 1)).length > 0) {
+		states.docker = true;
+	}
+
+	// eslint
+	if ((await vscode.workspace.findFiles(`{${patterns.eslint.join(',')}}`, '**/node_modules/**', 1)).length > 0) {
+		states.eslint = true;
+	}
+
+	// prettier
+	if ((await vscode.workspace.findFiles(`{${patterns.prettier.join(',')}}`, '**/node_modules/**', 1)).length > 0) {
+		states.prettier = true;
+	}
+
+	// stylelint
+	if ((await vscode.workspace.findFiles(`{${patterns.stylelint.join(',')}}`, '**/node_modules/**', 1)).length > 0) {
+		states.stylelint = true;
+	}
+
+	// npm (any package.json)
+	if ((await vscode.workspace.findFiles('**/package.json', '**/node_modules/**', 1)).length > 0) {
+		states.npm = true;
+	}
+
+	// vscode extension packaging
+	if ((await vscode.workspace.findFiles('**/.vscodeignore', '**/node_modules/**', 1)).length > 0) {
+		states.vscode = true;
+	} else {
+		// heuristics: VS Code extension has vsc-extension-quickstart.md or engines.vscode in package.json at root
+		try {
+			const root = folders[0];
+			const pkgUri = vscode.Uri.joinPath(root.uri, 'package.json');
+			if (await fileExists(pkgUri)) {
+				const buf = await vscode.workspace.fs.readFile(pkgUri);
+				const pkg = JSON.parse(Buffer.from(buf).toString('utf8')) as any;
+				if (pkg?.engines?.vscode) states.vscode = true;
+			}
+		} catch {
+			// ignore
+		}
+	}
+
+	await Promise.all((Object.keys(IGNORE_MAP) as IgnoreKey[]).map(key => setContext(IGNORE_MAP[key].contextKey, !!states[key])));
+
+	// Also set tsconfig context
+	const hasTsconfig = (await vscode.workspace.findFiles('**/tsconfig.json', '**/node_modules/**', 1)).length > 0;
+	await setContext('confignore.hasTsconfig', hasTsconfig);
+
+	return states;
+}
+
+function getWorkspaceFolder(uri: vscode.Uri): vscode.WorkspaceFolder | undefined {
+	return vscode.workspace.getWorkspaceFolder(uri);
+}
+
+async function isDirectory(uri: vscode.Uri): Promise<boolean> {
+	const stat = await vscode.workspace.fs.stat(uri);
+	return (stat.type & vscode.FileType.Directory) === vscode.FileType.Directory;
+}
+
+function toRelativePattern(folder: vscode.WorkspaceFolder, target: vscode.Uri, isDir: boolean): string {
+	const rel = path.relative(folder.uri.fsPath, target.fsPath).replace(/\\/g, '/');
+	if (isDir) {
+		return rel.endsWith('/') ? rel : rel + '/';
+	}
+	return rel || '/';
+}
+
+async function ensureFile(uri: vscode.Uri) {
+	if (!(await fileExists(uri))) {
+		await vscode.workspace.fs.writeFile(uri, new TextEncoder().encode(''));
+	}
+}
+
+async function appendUniqueLines(file: vscode.Uri, newLines: string[]) {
+	const buf = await vscode.workspace.fs.readFile(file);
+	let content = Buffer.from(buf).toString('utf8');
+	const existing = new Set(content.split(/\r?\n/).map(l => l.trim()).filter(l => l.length > 0));
+	const toAdd = newLines.map(l => l.trim()).filter(l => l.length > 0 && !existing.has(l));
+	if (toAdd.length === 0) return false;
+	if (content.length > 0 && !content.endsWith('\n')) content += '\n';
+	content += toAdd.join('\n') + '\n';
+	await vscode.workspace.fs.writeFile(file, new TextEncoder().encode(content));
+	return true;
+}
+
+function collectTargetUris(arg0?: unknown, arg1?: unknown): vscode.Uri[] {
+	// Explorer passes: (resource: Uri, all?: Uri[])
+	const list: vscode.Uri[] = [];
+	if (arg1 && Array.isArray(arg1) && arg1.every(u => u instanceof vscode.Uri)) {
+		return arg1 as vscode.Uri[];
+	}
+	if (arg0 instanceof vscode.Uri) list.push(arg0);
+	return list;
+}
+
+async function addToIgnore(type: IgnoreKey, arg0?: unknown, arg1?: unknown) {
+	const targets = collectTargetUris(arg0, arg1);
+	if (targets.length === 0) {
+		vscode.window.showWarningMessage('No target selected. Please right-click a file or folder in the Explorer.');
+		return;
+	}
+
+	const byFolder = new Map<vscode.WorkspaceFolder, vscode.Uri[]>();
+	for (const t of targets) {
+		const folder = getWorkspaceFolder(t);
+		if (!folder) continue;
+		if (!byFolder.has(folder)) byFolder.set(folder, []);
+		byFolder.get(folder)!.push(t);
+	}
+
+	const failures: string[] = [];
+
+	for (const [folder, uris] of byFolder) {
+		const ignoreFile = vscode.Uri.joinPath(folder.uri, IGNORE_MAP[type].file);
+		await ensureFile(ignoreFile);
+
+		const entries: string[] = [];
+		for (const u of uris) {
+			try {
+				const dir = await isDirectory(u);
+				const rel = toRelativePattern(folder, u, dir);
+				entries.push(rel);
+			} catch (e) {
+				failures.push(u.fsPath);
+			}
+		}
+
+		const changed = await appendUniqueLines(ignoreFile, entries);
+		if (changed) {
+			vscode.window.setStatusBarMessage(`confignore: Added ${entries.length} entr${entries.length === 1 ? 'y' : 'ies'} to ${IGNORE_MAP[type].file}`, 3000);
+		} else {
+			vscode.window.setStatusBarMessage(`confignore: Nothing to add to ${IGNORE_MAP[type].file}`, 3000);
+		}
+	}
+
+	if (failures.length) {
+		vscode.window.showErrorMessage(`confignore could not process: ${failures.join(', ')}`);
+	}
+}
+
+async function quickPickAdd(arg0?: unknown, arg1?: unknown) {
+	const states = await detectCapabilities();
+	const items = (Object.keys(IGNORE_MAP) as IgnoreKey[])
+		.filter(k => states[k])
+		.map(k => ({ label: IGNORE_MAP[k].label, description: IGNORE_MAP[k].file, key: k }));
+	if (items.length === 0) {
+		vscode.window.showInformationMessage('No relevant ignore files detected in this workspace.');
+		return;
+	}
+	const pick = await vscode.window.showQuickPick(items, { title: 'Add to Ignore', placeHolder: 'Select an ignore file' });
+	if (!pick) return;
+	await addToIgnore(pick.key as IgnoreKey, arg0, arg1);
+}
+
+// This method is called when your extension is activated
+// Your extension is activated the very first time the command is executed
+export function activate(context: vscode.ExtensionContext) {
+	const channel = vscode.window.createOutputChannel('confignore');
+	context.subscriptions.push(channel);
+	channel.appendLine('[confignore] Activated');
+
+	// Initialize detection on activation
+	detectCapabilities().then(states => {
+		channel.appendLine('[confignore] Detected targets: ' + JSON.stringify(states));
+	}).catch(err => {
+		channel.appendLine('[confignore] detectCapabilities error: ' + String(err));
+	});
+
+	// Initialize context keys
+	clearContextKeys().catch(err => {
+		channel.appendLine('[confignore] clearContextKeys error: ' + String(err));
+	});
+
+	// Subscribe to selection changes to update context keys
+	let lastSelection: vscode.Uri[] = [];
+	const updateSelection = async () => {
+		try {
+			const editor = vscode.window.activeTextEditor;
+			if (editor) {
+				const uris = [editor.document.uri];
+				if (JSON.stringify(uris) !== JSON.stringify(lastSelection)) {
+					lastSelection = uris;
+					const state = await resolveStates(uris);
+					await updateContextKeys(state);
+					channel.appendLine(`[confignore] Selection state: excluded=${state.excluded}, mixed=${state.mixed}, source=${state.source}`);
+				}
+			}
+		} catch (err) {
+			channel.appendLine('[confignore] updateSelection error: ' + String(err));
+		}
+	};
+
+	context.subscriptions.push(
+		vscode.window.onDidChangeActiveTextEditor(() => updateSelection()),
+		vscode.workspace.onDidChangeTextDocument(() => updateSelection())
+	);
+
+	// Initial selection update
+	updateSelection();
+
+	// Register commands
+	context.subscriptions.push(
+		vscode.commands.registerCommand('confignore.addToIgnore.quickPick', async (arg0, arg1) => {
+			channel.appendLine('[confignore] Command: quickPick');
+			await quickPickAdd(arg0, arg1);
+		}),
+		vscode.commands.registerCommand('confignore.addToIgnore.git', async (arg0, arg1) => {
+			channel.appendLine('[confignore] Command: addToIgnore.git');
+			await addToIgnore('git', arg0, arg1);
+		}),
+		vscode.commands.registerCommand('confignore.addToIgnore.docker', async (arg0, arg1) => {
+			channel.appendLine('[confignore] Command: addToIgnore.docker');
+			await addToIgnore('docker', arg0, arg1);
+		}),
+		vscode.commands.registerCommand('confignore.addToIgnore.eslint', async (arg0, arg1) => {
+			channel.appendLine('[confignore] Command: addToIgnore.eslint');
+			await addToIgnore('eslint', arg0, arg1);
+		}),
+		vscode.commands.registerCommand('confignore.addToIgnore.prettier', async (arg0, arg1) => {
+			channel.appendLine('[confignore] Command: addToIgnore.prettier');
+			await addToIgnore('prettier', arg0, arg1);
+		}),
+		vscode.commands.registerCommand('confignore.addToIgnore.npm', async (arg0, arg1) => {
+			channel.appendLine('[confignore] Command: addToIgnore.npm');
+			await addToIgnore('npm', arg0, arg1);
+		}),
+		vscode.commands.registerCommand('confignore.addToIgnore.stylelint', async (arg0, arg1) => {
+			channel.appendLine('[confignore] Command: addToIgnore.stylelint');
+			await addToIgnore('stylelint', arg0, arg1);
+		}),
+		vscode.commands.registerCommand('confignore.addToIgnore.vscode', async (arg0, arg1) => {
+			channel.appendLine('[confignore] Command: addToIgnore.vscode');
+			await addToIgnore('vscode', arg0, arg1);
+		}),
+		vscode.commands.registerCommand('confignore.addToIgnore.tsconfig', async (arg0, arg1) => {
+			channel.appendLine('[confignore] Command: addToIgnore.tsconfig');
+			const items = collectTargetUris(arg0, arg1);
+			if (items.length === 0) { vscode.window.showWarningMessage('No selection to exclude.'); return; }
+			const targets = await detectConfigTargetsFor(items[0]);
+			if (!(await guardMissingConfig(targets?.tsconfig, 'tsconfig'))) return;
+			await addToTsconfigExclude(targets!.tsconfig!, items);
+			vscode.window.setStatusBarMessage('confignore: Updated tsconfig exclude', 3000);
+		}),
+		vscode.commands.registerCommand('confignore.include', async (arg0, arg1) => {
+			channel.appendLine('[confignore] Command: include');
+			const items = collectTargetUris(arg0, arg1);
+			if (items.length === 0) { vscode.window.showWarningMessage('No selection to include.'); return; }
+			// For v1: attempt removal from config-based sources in precedence order
+			const targets = await detectConfigTargetsFor(items[0]);
+			let changed = false;
+			if (!changed && targets?.tsconfig) changed = await removeFromTsconfigExclude(targets.tsconfig, items);
+			if (!changed && targets?.eslintConfig) changed = await removeFromEslintIgnore(targets.eslintConfig, items);
+			if (!changed && targets?.prettierConfig) changed = await removeFromPrettierExcluded(targets.prettierConfig, items);
+			vscode.window.setStatusBarMessage(changed ? 'confignore: Inclusion updated' : 'confignore: Nothing to include in configs', 3000);
+		}),
+	);
+}
+
+// This method is called when your extension is deactivated
+export function deactivate() {}
