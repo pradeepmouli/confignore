@@ -38,7 +38,12 @@ No additional requirements. The extension uses built-in VS Code APIs.
 
 ## Extension Settings
 
-This extension currently contributes no settings.
+This extension contributes the following settings:
+
+- **`ignorer.features.includeSupport`** (boolean, default: false)
+  - Enables the experimental "Include" command and config-based inclusion updates
+  - When enabled, allows removing selections from config-based exclusions (tsconfig.json, .eslintrc.json, .prettierrc)
+  - **Note**: After toggling this setting, you must reload the VS Code window for changes to take effect
 
 ## Known Issues
 

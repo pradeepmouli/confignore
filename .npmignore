@@ -1,1 +1,11 @@
 esbuild.js
+node_modules/
+coverage/
+dist/
+out/
+test/
+specs/
+.specify/
+.github/
+.gitignore
+.eslintignore

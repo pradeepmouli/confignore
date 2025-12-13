@@ -16,20 +16,21 @@
 		"Other"
 	],
 	"activationEvents": [
-		"onStartupFinished",
-		"onCommand:confignore.addToIgnore.quickPick",
-		"onCommand:confignore.addToIgnore.git",
-		"onCommand:confignore.addToIgnore.docker",
-		"onCommand:confignore.addToIgnore.eslint",
-		"onCommand:confignore.addToIgnore.prettier",
-		"onCommand:confignore.addToIgnore.npm",
-		"onCommand:confignore.addToIgnore.stylelint",
-		"onCommand:confignore.addToIgnore.vscode",
-		"onCommand:confignore.addToIgnore.tsconfig",
-		"onCommand:confignore.include"
+		"onStartupFinished"
 	],
 	"main": "./dist/extension.js",
 	"contributes": {
+		"configuration": {
+			"title": "Confignore",
+			"properties": {
+				"ignorer.features.includeSupport": {
+					"type": "boolean",
+					"default": false,
+					"description": "Enable include/unignore commands and config-based inclusion updates. Experimental feature. Reload the window after changing this setting to update available commands.",
+					"scope": "window"
+				}
+			}
+		},
 		"submenus": [
 			{
 				"id": "confignore.submenu",
@@ -37,6 +38,11 @@
 			}
 		],
 		"commands": [
+			{
+				"command": "confignore.addToIgnore.quickPick",
+				"title": "Add to Ignore (pick target)",
+				"category": "confignore"
+			},
 			{
 				"command": "confignore.addToIgnore.git",
 				"title": "git (.gitignore)",
@@ -100,7 +106,7 @@
 				{
 					"command": "confignore.include",
 					"group": "0_pick",
-					"when": "confignore.selectionExcluded"
+					"when": "confignore.selectionExcluded && ignorer.features.includeSupport"
 				},
 				{
 					"command": "confignore.addToIgnore.git",

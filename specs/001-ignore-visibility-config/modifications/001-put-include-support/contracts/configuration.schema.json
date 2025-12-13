@@ -1,0 +1,13 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Ignorer Feature Flags Configuration",
+  "type": "object",
+  "properties": {
+    "ignorer.features.includeSupport": {
+      "type": "boolean",
+      "default": false,
+      "description": "Enable include/unignore commands and config-based inclusion updates. This is an experimental feature. You may need to reload the window after changing this setting for command registration to take effect.",
+      "scope": "window"
+    }
+  }
+}
