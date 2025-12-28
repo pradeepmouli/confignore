@@ -2,6 +2,36 @@
 
 set -e
 
+# Source common functions
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
+# Try to find and source common.sh
+COMMON_SH_FOUND=false
+# First try same directory (when installed to .specify/scripts/bash/)
+if [ -f "$SCRIPT_DIR/common.sh" ]; then
+    source "$SCRIPT_DIR/common.sh"
+    COMMON_SH_FOUND=true
+# Then try parent directory
+elif [ -f "$SCRIPT_DIR/../common.sh" ]; then
+    source "$SCRIPT_DIR/../common.sh"
+    COMMON_SH_FOUND=true
+# Then try spec-kit nested location
+elif [ -f "$SCRIPT_DIR/../bash/common.sh" ]; then
+    source "$SCRIPT_DIR/../bash/common.sh"
+    COMMON_SH_FOUND=true
+# Then try spec-kit repo root scripts
+elif [ -f "$SCRIPT_DIR/../../scripts/bash/common.sh" ]; then
+    source "$SCRIPT_DIR/../../scripts/bash/common.sh"
+    COMMON_SH_FOUND=true
+fi
+
+# Ensure generate_branch_name is available from common.sh
+if [ "$COMMON_SH_FOUND" = false ] || ! declare -f generate_branch_name > /dev/null; then
+    echo "Error: generate_branch_name is not available because common.sh could not be found or does not define it." >&2
+    echo "Please ensure common.sh is present and on one of the expected paths before running this script." >&2
+    exit 1
+fi
+
 JSON_MODE=false
 ARGS=()
 for arg in "$@"; do
@@ -52,11 +82,11 @@ mkdir -p "$SPECS_DIR"
 
 # Find highest hotfix number
 HIGHEST=0
-if [ -d "$SPECS_DIR" ]; then
-    for dir in "$SPECS_DIR"/hotfix-*; do
+if [ -d "$SPECS_DIR/hotfix" ]; then
+    for dir in "$SPECS_DIR"/hotfix/*/; do
         [ -d "$dir" ] || continue
         dirname=$(basename "$dir")
-        number=$(echo "$dirname" | sed 's/hotfix-//' | grep -o '^[0-9]\+' || echo "0")
+        number=$(echo "$dirname" | grep -o '^[0-9]\+' || echo "0")
         number=$((10#$number))
         if [ "$number" -gt "$HIGHEST" ]; then HIGHEST=$number; fi
     done
@@ -65,9 +95,8 @@ fi
 NEXT=$((HIGHEST + 1))
 HOTFIX_NUM=$(printf "%03d" "$NEXT")
 
-# Create branch name from description
-BRANCH_SUFFIX=$(echo "$INCIDENT_DESCRIPTION" | tr '[:upper:]' '[:lower:]' | sed 's/[^a-z0-9]/-/g' | sed 's/-\+/-/g' | sed 's/^-//' | sed 's/-$//')
-WORDS=$(echo "$BRANCH_SUFFIX" | tr '-' '\n' | grep -v '^$' | head -3 | tr '\n' '-' | sed 's/-$//')
+# Create branch name from description using smart filtering
+WORDS=$(generate_branch_name "$INCIDENT_DESCRIPTION")
 BRANCH_NAME="hotfix/${HOTFIX_NUM}-${WORDS}"
 HOTFIX_ID="hotfix-${HOTFIX_NUM}"
 
@@ -78,8 +107,10 @@ else
     >&2 echo "[hotfix] Warning: Git repository not detected; skipped branch creation for $BRANCH_NAME"
 fi
 
-# Create hotfix directory
-HOTFIX_DIR="$SPECS_DIR/${HOTFIX_ID}-${WORDS}"
+# Create hotfix directory under hotfix/ subdirectory
+HOTFIX_SUBDIR="$SPECS_DIR/hotfix"
+mkdir -p "$HOTFIX_SUBDIR"
+HOTFIX_DIR="$HOTFIX_SUBDIR/${HOTFIX_NUM}-${WORDS}"
 mkdir -p "$HOTFIX_DIR"
 
 # Copy templates
@@ -100,6 +131,9 @@ if [ -f "$POSTMORTEM_TEMPLATE" ]; then
 else
     echo "# Post-Mortem" > "$POSTMORTEM_FILE"
 fi
+
+# Create symlink from spec.md to hotfix.md
+ln -sf "hotfix.md" "$HOTFIX_DIR/spec.md"
 
 # Add incident start timestamp to hotfix file
 TIMESTAMP=$(date -u +"%Y-%m-%d %H:%M:%S UTC")

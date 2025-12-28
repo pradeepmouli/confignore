@@ -6,7 +6,10 @@ set -e
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 # Check if we're in spec-kit repo (scripts/bash/common.sh) or extensions (need to go up to spec-kit)
-if [ -f "$SCRIPT_DIR/../bash/common.sh" ]; then
+if [ -f "$SCRIPT_DIR/common.sh" ]; then
+    # Running from same directory (most common case)
+    source "$SCRIPT_DIR/common.sh"
+elif [ -f "$SCRIPT_DIR/../bash/common.sh" ]; then
     # Running from spec-kit integrated location: .specify/scripts/bash/
     source "$SCRIPT_DIR/../bash/common.sh"
 elif [ -f "$SCRIPT_DIR/../../scripts/bash/common.sh" ]; then
@@ -33,6 +36,13 @@ else
         echo "Error: Could not find common.sh. Please ensure spec-kit is properly installed." >&2
         exit 1
     fi
+fi
+
+# Verify generate_branch_name function is available
+if ! declare -f generate_branch_name > /dev/null; then
+    echo "Error: generate_branch_name function is not available in common.sh." >&2
+    echo "Please ensure you have the latest version of spec-kit-extensions installed." >&2
+    exit 1
 fi
 
 JSON_MODE=false
@@ -62,11 +72,11 @@ mkdir -p "$SPECS_DIR"
 
 # Find highest bugfix number
 HIGHEST=0
-if [ -d "$SPECS_DIR" ]; then
-    for dir in "$SPECS_DIR"/bugfix-*; do
+if [ -d "$SPECS_DIR/bugfix" ]; then
+    for dir in "$SPECS_DIR"/bugfix/*/; do
         [ -d "$dir" ] || continue
         dirname=$(basename "$dir")
-        number=$(echo "$dirname" | sed 's/bugfix-//' | grep -o '^[0-9]\+' || echo "0")
+        number=$(echo "$dirname" | grep -o '^[0-9]\+' || echo "0")
         number=$((10#$number))
         if [ "$number" -gt "$HIGHEST" ]; then HIGHEST=$number; fi
     done
@@ -75,9 +85,8 @@ fi
 NEXT=$((HIGHEST + 1))
 BUG_NUM=$(printf "%03d" "$NEXT")
 
-# Create branch name from description
-BRANCH_SUFFIX=$(echo "$BUG_DESCRIPTION" | tr '[:upper:]' '[:lower:]' | sed 's/[^a-z0-9]/-/g' | sed 's/-\+/-/g' | sed 's/^-//' | sed 's/-$//')
-WORDS=$(echo "$BRANCH_SUFFIX" | tr '-' '\n' | grep -v '^$' | head -3 | tr '\n' '-' | sed 's/-$//')
+# Create branch name from description using smart filtering
+WORDS=$(generate_branch_name "$BUG_DESCRIPTION")
 BRANCH_NAME="bugfix/${BUG_NUM}-${WORDS}"
 BUG_ID="bugfix-${BUG_NUM}"
 
@@ -88,8 +97,10 @@ else
     >&2 echo "[bugfix] Warning: Git repository not detected; skipped branch creation for $BRANCH_NAME"
 fi
 
-# Create bug directory
-BUG_DIR="$SPECS_DIR/${BUG_ID}-${WORDS}"
+# Create bug directory under bugfix/ subdirectory
+BUGFIX_SUBDIR="$SPECS_DIR/bugfix"
+mkdir -p "$BUGFIX_SUBDIR"
+BUG_DIR="$BUGFIX_SUBDIR/${BUG_NUM}-${WORDS}"
 mkdir -p "$BUG_DIR"
 
 # Copy template
@@ -101,6 +112,9 @@ if [ -f "$BUGFIX_TEMPLATE" ]; then
 else
     echo "# Bug Report" > "$BUG_REPORT_FILE"
 fi
+
+# Create symlink from spec.md to bug-report.md
+ln -sf "bug-report.md" "$BUG_DIR/spec.md"
 
 # Set environment variable for current session
 export SPECIFY_BUGFIX="$BUG_ID"

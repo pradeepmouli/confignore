@@ -4,6 +4,14 @@ All notable changes to the "confignore" extension will be documented in this fil
 
 Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how to structure this file.
 
+## [Unreleased]
+
+### Added
+- Feature flag for include/unignore support: `ignorer.features.includeSupport` (default: false)
+  - Allows users to opt-in to experimental include functionality
+  - Gated registration of include command and config-based removal operations
+  - Automatic window reload prompt when feature flag is toggled
+
 ## [0.0.3] - 2025-11-04
 
 ### Added

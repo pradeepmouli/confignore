@@ -25,10 +25,10 @@ description: "Actionable, dependency-ordered task list for feature implementatio
 
 **Purpose**: Prepare structure and contributions needed for feature work.
 
-- [ ] T001 Create service/lib/model scaffolding per plan in src/services/, src/lib/, src/models/
-- [ ] T002 Add new "Include" command contribution in `package.json` (contributes.commands)
-- [ ] T003 Add `confignore.addToIgnore.tsconfig` to submenu in `package.json` (contributes.menus.confignore.submenu)
-- [ ] T004 Define new context keys usage in menus (`confignore.selectionExcluded`, `confignore.selectionMixed`) in `package.json`
+- [x] T001 Create service/lib/model scaffolding per plan in src/services/, src/lib/, src/models/
+- [x] T002 Add new "Include" command contribution in `package.json` (contributes.commands)
+- [x] T003 Add `confignore.addToIgnore.tsconfig` to submenu in `package.json` (contributes.menus.confignore.submenu)
+- [x] T004 Define new context keys usage in menus (`confignore.selectionExcluded`, `confignore.selectionMixed`) in `package.json`
 
 ---
 
@@ -36,10 +36,10 @@ description: "Actionable, dependency-ordered task list for feature implementatio
 
 **Purpose**: Core building blocks required before user stories.
 
-- [ ] T005 [P] Implement core types in `src/models/types.ts` (EffectiveState, Source, ConfigTarget)
-- [ ] T006 [P] Implement safe fs helpers in `src/lib/fs.ts` (atomic read/write, JSON/JSONC handling)
-- [ ] T007 [P] Implement path/pattern utilities in `src/lib/patterns.ts`
-- [ ] T008 Wire basic activation scaffolding in `src/extension.ts` (register context updater, empty stubs)
+- [x] T005 [P] Implement core types in `src/models/types.ts` (EffectiveState, Source, ConfigTarget)
+- [x] T006 [P] Implement safe fs helpers in `src/lib/fs.ts` (atomic read/write, JSON/JSONC handling)
+- [x] T007 [P] Implement path/pattern utilities in `src/lib/patterns.ts`
+- [x] T008 Wire basic activation scaffolding in `src/extension.ts` (register context updater, empty stubs)
 
 **Checkpoint**: Foundation ready — user stories can begin.
 
@@ -53,14 +53,14 @@ description: "Actionable, dependency-ordered task list for feature implementatio
 
 ### Implementation
 
-- [ ] T009 [P] [US1] Implement selection state resolver in `src/services/stateResolver.ts` (read-only evaluation across sources; implement precedence: config > ignore > workspace)
-- [ ] T010 [P] [US1] Implement context key setter in `src/services/contextKeys.ts` (set `confignore.selectionExcluded`, `confignore.selectionMixed`)
-- [ ] T011 [US1] Update `src/extension.ts` to subscribe to selection changes and call resolver → context setter
-- [ ] T012 [US1] Update `package.json` menus to use when-clauses:
+- [x] T009 [P] [US1] Implement selection state resolver in `src/services/stateResolver.ts` (read-only evaluation across sources; implement precedence: config > ignore > workspace)
+- [x] T010 [P] [US1] Implement context key setter in `src/services/contextKeys.ts` (set `confignore.selectionExcluded`, `confignore.selectionMixed`)
+- [x] T011 [US1] Update `src/extension.ts` to subscribe to selection changes and call resolver → context setter
+- [x] T012 [US1] Update `package.json` menus to use when-clauses:
   - Show Include when `confignore.selectionExcluded`
   - Show Ignore submenu when `confignore.selectionMixed || !confignore.selectionExcluded`
-- [ ] T013 [US1] Add minimal unit tests for resolver happy path in `test/unit/stateResolver.test.ts`
-- [ ] T014 [US1] Add minimal unit tests for context keys in `test/unit/contextKeys.test.ts`
+- [x] T013 [US1] Add minimal unit tests for resolver happy path in `test/unit/stateResolver.test.ts`
+- [x] T014 [US1] Add minimal unit tests for context keys in `test/unit/contextKeys.test.ts`
 
 **Checkpoint**: Context menu reflects effective state accurately; no file writes.
 
@@ -74,9 +74,9 @@ description: "Actionable, dependency-ordered task list for feature implementatio
 
 ### Implementation
 
-- [ ] T015 [P] [US2] Enhance resolver to handle nested parent exclusions and child negations in `src/services/stateResolver.ts`
-- [ ] T016 [P] [US2] Handle multi-selection aggregation and set `selectionMixed` in `src/services/contextKeys.ts`
-- [ ] T017 [US2] Expand unit tests for mixed-state and negation cases in `test/unit/stateResolver.test.ts`
+- [x] T015 [P] [US2] Enhance resolver to handle nested parent exclusions and child negations in `src/services/stateResolver.ts`
+- [x] T016 [P] [US2] Handle multi-selection aggregation and set `selectionMixed` in `src/services/contextKeys.ts`
+- [x] T017 [US2] Expand unit tests for mixed-state and negation cases in `test/unit/stateResolver.test.ts`
 
 **Checkpoint**: Visibility works for non-excluded and mixed selections.
 
@@ -90,14 +90,14 @@ description: "Actionable, dependency-ordered task list for feature implementatio
 
 ### Implementation
 
-- [ ] T018 [P] [US3] Implement config target IO for TypeScript in `src/services/configTargets.ts` (read/write include/exclude)
-- [ ] T019 [P] [US3] Implement config target IO for Prettier in `src/services/configTargets.ts`
-- [ ] T020 [P] [US3] Implement config target IO for ESLint in `src/services/configTargets.ts`
-- [ ] T021 [US3] Implement `confignore.addToIgnore.tsconfig` command handler in `src/extension.ts` using writers
-- [ ] T022 [US3] Add new `confignore.include` command handler in `src/extension.ts` to remove exclusions per precedence
-- [ ] T023 [US3] Guard actions when config missing (info message), no file creation
-- [ ] T024 [US3] Add unit tests for writers in `test/unit/configTargets.test.ts`
-- [ ] T025 [US3] Add integration tests for commands in `test/integration/commands.test.ts`
+- [x] T018 [P] [US3] Implement config target IO for TypeScript in `src/services/configTargets.ts` (read/write include/exclude)
+- [x] T019 [P] [US3] Implement config target IO for Prettier in `src/services/configTargets.ts`
+- [x] T020 [P] [US3] Implement config target IO for ESLint in `src/services/configTargets.ts`
+- [x] T021 [US3] Implement `confignore.addToIgnore.tsconfig` command handler in `src/extension.ts` using writers
+- [x] T022 [US3] Add new `confignore.include` command handler in `src/extension.ts` to remove exclusions per precedence
+- [x] T023 [US3] Guard actions when config missing (info message), no file creation
+- [x] T024 [US3] Add unit tests for writers in `test/unit/configTargets.test.ts`
+- [x] T025 [US3] Add integration tests for commands in `test/integration/commands.test.ts`
 
 **Checkpoint**: Config updates functional; include/exclude flows work where configs exist.
 
@@ -107,11 +107,11 @@ description: "Actionable, dependency-ordered task list for feature implementatio
 
 **Purpose**: Final refinements.
 
-- [ ] T026 [P] Documentation updates in `specs/001-ignore-visibility-config/quickstart.md` and `README.md`
+- [x] T026 [P] Documentation updates in `specs/001-ignore-visibility-config/quickstart.md` and `README.md`
 - [ ] T027 Code cleanup and refactoring (reduce duplication between targets)
 - [ ] T028 Performance pass on resolver (batch file reads, cache per workspace)
-- [ ] T029 [P] Additional unit tests for edge cases in `test/unit/`
-- [ ] T030 Update CHANGELOG and bump version in `package.json`
+- [x] T029 [P] Additional unit tests for edge cases in `test/unit/`
+- [x] T030 Update CHANGELOG and bump version in `package.json`
 
 ---
 

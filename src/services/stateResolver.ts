@@ -12,7 +12,8 @@ import { detectConfigTargetsFor, eslintExcludes, prettierExcludes, tsconfigExclu
 /**
  * Resolve effective state for a single URI
  */
-export async function resolveState(uri: Uri): Promise<EffectiveState> {
+export async function resolveState(uri: Uri, options?: { includeSupportEnabled?: boolean; }): Promise<EffectiveState> {
+	const includeSupportEnabled = options?.includeSupportEnabled !== false;
 	const workspaceFolder = getWorkspaceFolder(uri);
 	if (!workspaceFolder) {
 		// Not in workspace, not excluded
@@ -21,7 +22,8 @@ export async function resolveState(uri: Uri): Promise<EffectiveState> {
 			excluded: false,
 			mixed: false,
 			source: null,
-			sourcesApplied: []
+			sourcesApplied: [],
+			includeStateComputed: includeSupportEnabled
 		};
 	}
 
@@ -32,7 +34,8 @@ export async function resolveState(uri: Uri): Promise<EffectiveState> {
 			excluded: false,
 			mixed: false,
 			source: null,
-			sourcesApplied: []
+			sourcesApplied: [],
+			includeStateComputed: includeSupportEnabled
 		};
 	}
 
@@ -43,9 +46,9 @@ export async function resolveState(uri: Uri): Promise<EffectiveState> {
 	// Check sources in precedence order: config > ignore files > workspace settings
 	const sources: Array<{ source: Source; check: () => Promise<boolean> }> = [
 		// Config-based (highest precedence)
-		{ source: Source.ConfigTsconfig, check: () => checkTsconfigExclusion(workspaceFolder.uri.fsPath, relativePath, uri) },
-		{ source: Source.ConfigPrettier, check: () => checkPrettierExclusion(workspaceFolder.uri.fsPath, relativePath, uri) },
-		{ source: Source.ConfigEslint, check: () => checkEslintExclusion(workspaceFolder.uri.fsPath, relativePath, uri) },
+		{ source: Source.ConfigTsconfig, check: () => includeSupportEnabled ? checkTsconfigExclusion(workspaceFolder.uri.fsPath, relativePath, uri) : Promise.resolve(false) },
+		{ source: Source.ConfigPrettier, check: () => includeSupportEnabled ? checkPrettierExclusion(workspaceFolder.uri.fsPath, relativePath, uri) : Promise.resolve(false) },
+		{ source: Source.ConfigEslint, check: () => includeSupportEnabled ? checkEslintExclusion(workspaceFolder.uri.fsPath, relativePath, uri) : Promise.resolve(false) },
 
 		// Ignore files (middle precedence)
 		{ source: Source.IgnoreFileGit, check: () => checkIgnoreFile(workspaceFolder.uri.fsPath, '.gitignore', relativePath) },
@@ -77,30 +80,33 @@ export async function resolveState(uri: Uri): Promise<EffectiveState> {
 		excluded,
 		mixed: false,
 		source: winningSource,
-		sourcesApplied
+		sourcesApplied,
+		includeStateComputed: includeSupportEnabled
 	};
 }
 
 /**
  * Resolve states for multiple URIs and aggregate
  */
-export async function resolveStates(uris: Uri[]): Promise<EffectiveState> {
+export async function resolveStates(uris: Uri[], options?: { includeSupportEnabled?: boolean; }): Promise<EffectiveState> {
+	const includeSupportEnabled = options?.includeSupportEnabled !== false;
 	if (uris.length === 0) {
 		return {
 			path: Uri.file('/'),
 			excluded: false,
 			mixed: false,
 			source: null,
-			sourcesApplied: []
+			sourcesApplied: [],
+			includeStateComputed: includeSupportEnabled
 		};
 	}
 
 	if (uris.length === 1) {
-		return resolveState(uris[0]);
+		return resolveState(uris[0], { includeSupportEnabled });
 	}
 
 	// Multi-selection: resolve all and check for mixed state
-	const states = await Promise.all(uris.map(resolveState));
+	const states = await Promise.all(uris.map(u => resolveState(u, { includeSupportEnabled })));
 	const excludedStates = states.filter(s => s.excluded);
 	const notExcludedStates = states.filter(s => !s.excluded);
 
@@ -113,7 +119,8 @@ export async function resolveStates(uris: Uri[]): Promise<EffectiveState> {
 			excluded: excludedStates.length > notExcludedStates.length,
 			mixed: true,
 			source: null,
-			sourcesApplied: []
+			sourcesApplied: [],
+			includeStateComputed: includeSupportEnabled
 		};
 	}
 
@@ -124,7 +131,8 @@ export async function resolveStates(uris: Uri[]): Promise<EffectiveState> {
 
 	return {
 		...first,
-		sourcesApplied: Array.from(allSources)
+		sourcesApplied: Array.from(allSources),
+		includeStateComputed: includeSupportEnabled
 	};
 }
 
@@ -154,7 +162,7 @@ async function checkIgnoreFile(workspacePath: string, ignoreFileName: string, re
  */
 async function checkTsconfigExclusion(workspacePath: string, relativePath: string, uri: Uri): Promise<boolean> {
 	const targets = await detectConfigTargetsFor(uri);
-	if (!targets?.tsconfig) return false;
+	if (!targets?.tsconfig) {return false;}
 	return tsconfigExcludes(targets.tsconfig, relativePath);
 }
 
@@ -164,7 +172,7 @@ async function checkTsconfigExclusion(workspacePath: string, relativePath: strin
  */
 async function checkPrettierExclusion(workspacePath: string, relativePath: string, uri: Uri): Promise<boolean> {
 	const targets = await detectConfigTargetsFor(uri);
-	if (!targets?.prettierConfig) return false;
+	if (!targets?.prettierConfig) {return false;}
 	return prettierExcludes(targets.prettierConfig, relativePath);
 }
 
@@ -174,6 +182,6 @@ async function checkPrettierExclusion(workspacePath: string, relativePath: strin
  */
 async function checkEslintExclusion(workspacePath: string, relativePath: string, uri: Uri): Promise<boolean> {
 	const targets = await detectConfigTargetsFor(uri);
-	if (!targets?.eslintConfig) return false;
+	if (!targets?.eslintConfig) {return false;}
 	return eslintExcludes(targets.eslintConfig, relativePath);
 }

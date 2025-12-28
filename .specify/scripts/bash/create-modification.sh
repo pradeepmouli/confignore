@@ -6,7 +6,10 @@ set -e
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 # Check if we're in spec-kit repo (scripts/bash/common.sh) or extensions (need to go up to spec-kit)
-if [ -f "$SCRIPT_DIR/../bash/common.sh" ]; then
+if [ -f "$SCRIPT_DIR/common.sh" ]; then
+    # Running from same directory (most common case)
+    source "$SCRIPT_DIR/common.sh"
+elif [ -f "$SCRIPT_DIR/../bash/common.sh" ]; then
     # Running from spec-kit integrated location: .specify/scripts/bash/
     source "$SCRIPT_DIR/../bash/common.sh"
 elif [ -f "$SCRIPT_DIR/../../scripts/bash/common.sh" ]; then
@@ -33,6 +36,13 @@ else
         echo "Error: Could not find common.sh. Please ensure spec-kit is properly installed." >&2
         exit 1
     fi
+fi
+
+# Verify generate_branch_name function is available
+if ! declare -f generate_branch_name > /dev/null; then
+    echo "Error: generate_branch_name function is not available in common.sh." >&2
+    echo "Please ensure you have the latest version of spec-kit-extensions installed." >&2
+    exit 1
 fi
 
 JSON_MODE=false
@@ -151,9 +161,8 @@ fi
 NEXT_MOD=$((HIGHEST_MOD + 1))
 MOD_NUM=$(printf "%03d" "$NEXT_MOD")
 
-# Create branch name from description
-BRANCH_SUFFIX=$(echo "$MOD_DESCRIPTION" | tr '[:upper:]' '[:lower:]' | sed 's/[^a-z0-9]/-/g' | sed 's/-\+/-/g' | sed 's/^-//' | sed 's/-$//')
-WORDS=$(echo "$BRANCH_SUFFIX" | tr '-' '\n' | grep -v '^$' | head -3 | tr '\n' '-' | sed 's/-$//')
+# Create branch name from description using smart filtering
+WORDS=$(generate_branch_name "$MOD_DESCRIPTION")
 BRANCH_NAME="${FEATURE_NUM}-mod-${MOD_NUM}-${WORDS}"
 MOD_ID="${FEATURE_NUM}-mod-${MOD_NUM}"
 
@@ -178,6 +187,9 @@ if [ -f "$MODIFY_TEMPLATE" ]; then
 else
     echo "# Modification Spec" > "$MOD_SPEC_FILE"
 fi
+
+# Create symlink from spec.md to modification-spec.md
+ln -sf "modification-spec.md" "$MOD_DIR/spec.md"
 
 # Run impact analysis
 IMPACT_SCANNER="$REPO_ROOT/.specify/extensions/workflows/modify/scan-impact.sh"

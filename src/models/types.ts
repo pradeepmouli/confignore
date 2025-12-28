@@ -44,6 +44,9 @@ export interface EffectiveState {
 
 	/** All sources that matched this selection (for diagnostics) */
 	sourcesApplied: Source[];
+
+	/** True if include-state was evaluated (feature flag enabled) */
+	includeStateComputed?: boolean;
 }
 
 /**

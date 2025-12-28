@@ -3,10 +3,12 @@
 import * as path from 'path';
 import * as vscode from 'vscode';
 import { addToTsconfigExclude, detectConfigTargetsFor, guardMissingConfig, removeFromEslintIgnore, removeFromPrettierExcluded, removeFromTsconfigExclude } from './services/configTargets';
-import { clearContextKeys, updateContextKeys } from './services/contextKeys';
+import { clearContextKeys, setFeatureFlagContext, updateContextKeys } from './services/contextKeys';
 import { resolveStates } from './services/stateResolver';
 
 type IgnoreKey = 'git' | 'docker' | 'eslint' | 'prettier' | 'npm' | 'stylelint' | 'vscode';
+
+const FEATURE_FLAG_SETTING = 'ignorer.features.includeSupport';
 
 const IGNORE_MAP: Record<IgnoreKey, { file: string; label: string; contextKey: string; }> = {
 	git: { file: '.gitignore', label: 'Git', contextKey: 'confignore.hasGit' },
@@ -61,8 +63,8 @@ async function detectCapabilities() {
 	// Search across all folders; enable if any folder suggests relevance
 	const patterns = {
 		docker: ['**/.dockerignore', '**/Dockerfile*', '**/docker-compose*.y?(a)ml'],
-		eslint: ['**/.eslintignore', '**/.eslintrc*', '**/eslint.config.*'],
-		prettier: ['**/.prettierignore', '**/.prettierrc*', '**/prettier.config.*'],
+		eslint: ['**/.eslintignore', '**/.eslintrc*', '**/eslint.config.*','**/oxlint**'],
+		prettier: ['**/.prettierignore', '**/.prettierrc*', '**/prettier.config.*', '**/*oxfmt**'],
 		stylelint: ['**/.stylelintignore', '**/.stylelintrc*', '**/stylelint.config.*'],
 	} as const;
 
@@ -109,7 +111,7 @@ async function detectCapabilities() {
 			if (await fileExists(pkgUri)) {
 				const buf = await vscode.workspace.fs.readFile(pkgUri);
 				const pkg = JSON.parse(Buffer.from(buf).toString('utf8')) as any;
-				if (pkg?.engines?.vscode) states.vscode = true;
+				if (pkg?.engines?.vscode) {states.vscode = true;}
 			}
 		} catch {
 			// ignore
@@ -123,6 +125,10 @@ async function detectCapabilities() {
 	await setContext('confignore.hasTsconfig', hasTsconfig);
 
 	return states;
+}
+
+function getIncludeSupportFlag(): boolean {
+	return vscode.workspace.getConfiguration('ignorer.features').get<boolean>('includeSupport', false) ?? false;
 }
 
 function getWorkspaceFolder(uri: vscode.Uri): vscode.WorkspaceFolder | undefined {
@@ -153,8 +159,8 @@ async function appendUniqueLines(file: vscode.Uri, newLines: string[]) {
 	let content = Buffer.from(buf).toString('utf8');
 	const existing = new Set(content.split(/\r?\n/).map(l => l.trim()).filter(l => l.length > 0));
 	const toAdd = newLines.map(l => l.trim()).filter(l => l.length > 0 && !existing.has(l));
-	if (toAdd.length === 0) return false;
-	if (content.length > 0 && !content.endsWith('\n')) content += '\n';
+	if (toAdd.length === 0) {return false;}
+	if (content.length > 0 && !content.endsWith('\n')) {content += '\n';}
 	content += toAdd.join('\n') + '\n';
 	await vscode.workspace.fs.writeFile(file, new TextEncoder().encode(content));
 	return true;
@@ -166,7 +172,7 @@ function collectTargetUris(arg0?: unknown, arg1?: unknown): vscode.Uri[] {
 	if (arg1 && Array.isArray(arg1) && arg1.every(u => u instanceof vscode.Uri)) {
 		return arg1 as vscode.Uri[];
 	}
-	if (arg0 instanceof vscode.Uri) list.push(arg0);
+	if (arg0 instanceof vscode.Uri) {list.push(arg0);}
 	return list;
 }
 
@@ -180,8 +186,8 @@ async function addToIgnore(type: IgnoreKey, arg0?: unknown, arg1?: unknown) {
 	const byFolder = new Map<vscode.WorkspaceFolder, vscode.Uri[]>();
 	for (const t of targets) {
 		const folder = getWorkspaceFolder(t);
-		if (!folder) continue;
-		if (!byFolder.has(folder)) byFolder.set(folder, []);
+		if (!folder) {continue;}
+		if (!byFolder.has(folder)) {byFolder.set(folder, []);}
 		byFolder.get(folder)!.push(t);
 	}
 
@@ -197,7 +203,8 @@ async function addToIgnore(type: IgnoreKey, arg0?: unknown, arg1?: unknown) {
 				const dir = await isDirectory(u);
 				const rel = toRelativePattern(folder, u, dir);
 				entries.push(rel);
-			} catch (e) {
+			} catch (error) {
+				void error;
 				failures.push(u.fsPath);
 			}
 		}
@@ -225,7 +232,7 @@ async function quickPickAdd(arg0?: unknown, arg1?: unknown) {
 		return;
 	}
 	const pick = await vscode.window.showQuickPick(items, { title: 'Add to Ignore', placeHolder: 'Select an ignore file' });
-	if (!pick) return;
+	if (!pick) {return;}
 	await addToIgnore(pick.key as IgnoreKey, arg0, arg1);
 }
 
@@ -235,6 +242,11 @@ export function activate(context: vscode.ExtensionContext) {
 	const channel = vscode.window.createOutputChannel('confignore');
 	context.subscriptions.push(channel);
 	channel.appendLine('[confignore] Activated');
+
+	let includeSupportEnabled = getIncludeSupportFlag();
+	setFeatureFlagContext(includeSupportEnabled).catch(err => {
+		channel.appendLine('[confignore] setFeatureFlagContext error: ' + String(err));
+	});
 
 	// Initialize detection on activation
 	detectCapabilities().then(states => {
@@ -257,7 +269,7 @@ export function activate(context: vscode.ExtensionContext) {
 				const uris = [editor.document.uri];
 				if (JSON.stringify(uris) !== JSON.stringify(lastSelection)) {
 					lastSelection = uris;
-					const state = await resolveStates(uris);
+					const state = await resolveStates(uris, { includeSupportEnabled });
 					await updateContextKeys(state);
 					channel.appendLine(`[confignore] Selection state: excluded=${state.excluded}, mixed=${state.mixed}, source=${state.source}`);
 				}
@@ -270,6 +282,24 @@ export function activate(context: vscode.ExtensionContext) {
 	context.subscriptions.push(
 		vscode.window.onDidChangeActiveTextEditor(() => updateSelection()),
 		vscode.workspace.onDidChangeTextDocument(() => updateSelection())
+	);
+
+	context.subscriptions.push(
+		vscode.workspace.onDidChangeConfiguration(async (event) => {
+			if (event.affectsConfiguration(FEATURE_FLAG_SETTING)) {
+				const nextFlag = getIncludeSupportFlag();
+				includeSupportEnabled = nextFlag;
+				await setFeatureFlagContext(nextFlag);
+				channel.appendLine(`[confignore] Feature flag includeSupport changed: ${nextFlag}`);
+				const action = 'Reload Window';
+				const msg = `confignore include support ${nextFlag ? 'enabled' : 'disabled'}. Reload the window to update available commands.`;
+				const picked = await vscode.window.showInformationMessage(msg, action);
+				if (picked === action) {
+					await vscode.commands.executeCommand('workbench.action.reloadWindow');
+				}
+				await updateSelection();
+			}
+		})
 	);
 
 	// Initial selection update
@@ -314,22 +344,24 @@ export function activate(context: vscode.ExtensionContext) {
 			const items = collectTargetUris(arg0, arg1);
 			if (items.length === 0) { vscode.window.showWarningMessage('No selection to exclude.'); return; }
 			const targets = await detectConfigTargetsFor(items[0]);
-			if (!(await guardMissingConfig(targets?.tsconfig, 'tsconfig'))) return;
+			if (!(await guardMissingConfig(targets?.tsconfig, 'tsconfig'))) {return;}
 			await addToTsconfigExclude(targets!.tsconfig!, items);
 			vscode.window.setStatusBarMessage('confignore: Updated tsconfig exclude', 3000);
 		}),
-		vscode.commands.registerCommand('confignore.include', async (arg0, arg1) => {
-			channel.appendLine('[confignore] Command: include');
-			const items = collectTargetUris(arg0, arg1);
-			if (items.length === 0) { vscode.window.showWarningMessage('No selection to include.'); return; }
-			// For v1: attempt removal from config-based sources in precedence order
-			const targets = await detectConfigTargetsFor(items[0]);
-			let changed = false;
-			if (!changed && targets?.tsconfig) changed = await removeFromTsconfigExclude(targets.tsconfig, items);
-			if (!changed && targets?.eslintConfig) changed = await removeFromEslintIgnore(targets.eslintConfig, items);
-			if (!changed && targets?.prettierConfig) changed = await removeFromPrettierExcluded(targets.prettierConfig, items);
-			vscode.window.setStatusBarMessage(changed ? 'confignore: Inclusion updated' : 'confignore: Nothing to include in configs', 3000);
-		}),
+		...(includeSupportEnabled ? [
+			vscode.commands.registerCommand('confignore.include', async (arg0, arg1) => {
+				channel.appendLine('[confignore] Command: include');
+				const items = collectTargetUris(arg0, arg1);
+				if (items.length === 0) { vscode.window.showWarningMessage('No selection to include.'); return; }
+				// For v1: attempt removal from config-based sources in precedence order
+				const targets = await detectConfigTargetsFor(items[0]);
+				let changed = false;
+				if (!changed && targets?.tsconfig) {changed = await removeFromTsconfigExclude(targets.tsconfig, items);}
+				if (!changed && targets?.eslintConfig) {changed = await removeFromEslintIgnore(targets.eslintConfig, items);}
+				if (!changed && targets?.prettierConfig) {changed = await removeFromPrettierExcluded(targets.prettierConfig, items);}
+				vscode.window.setStatusBarMessage(changed ? 'confignore: Inclusion updated' : 'confignore: Nothing to include in configs', 3000);
+			})
+		] : [])
 	);
 }
 

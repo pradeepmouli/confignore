@@ -2,6 +2,36 @@
 
 set -e
 
+# Source common functions
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
+# Try to find and source common.sh
+COMMON_SH_FOUND=false
+# First try same directory (when installed to .specify/scripts/bash/)
+if [ -f "$SCRIPT_DIR/common.sh" ]; then
+    source "$SCRIPT_DIR/common.sh"
+    COMMON_SH_FOUND=true
+# Then try parent directory
+elif [ -f "$SCRIPT_DIR/../common.sh" ]; then
+    source "$SCRIPT_DIR/../common.sh"
+    COMMON_SH_FOUND=true
+# Then try spec-kit nested location
+elif [ -f "$SCRIPT_DIR/../bash/common.sh" ]; then
+    source "$SCRIPT_DIR/../bash/common.sh"
+    COMMON_SH_FOUND=true
+# Then try spec-kit repo root scripts
+elif [ -f "$SCRIPT_DIR/../../scripts/bash/common.sh" ]; then
+    source "$SCRIPT_DIR/../../scripts/bash/common.sh"
+    COMMON_SH_FOUND=true
+fi
+
+# Ensure generate_branch_name is available from common.sh
+if [ "$COMMON_SH_FOUND" = false ] || ! declare -f generate_branch_name > /dev/null; then
+    echo "Error: generate_branch_name is not available because common.sh could not be found or does not define it." >&2
+    echo "Please ensure common.sh is present and on one of the expected paths before running this script." >&2
+    exit 1
+fi
+
 JSON_MODE=false
 ARGS=()
 for arg in "$@"; do
@@ -52,11 +82,11 @@ mkdir -p "$SPECS_DIR"
 
 # Find highest refactor number
 HIGHEST=0
-if [ -d "$SPECS_DIR" ]; then
-    for dir in "$SPECS_DIR"/refactor-*; do
+if [ -d "$SPECS_DIR/refactor" ]; then
+    for dir in "$SPECS_DIR"/refactor/*/; do
         [ -d "$dir" ] || continue
         dirname=$(basename "$dir")
-        number=$(echo "$dirname" | sed 's/refactor-//' | grep -o '^[0-9]\+' || echo "0")
+        number=$(echo "$dirname" | grep -o '^[0-9]\+' || echo "0")
         number=$((10#$number))
         if [ "$number" -gt "$HIGHEST" ]; then HIGHEST=$number; fi
     done
@@ -65,9 +95,8 @@ fi
 NEXT=$((HIGHEST + 1))
 REFACTOR_NUM=$(printf "%03d" "$NEXT")
 
-# Create branch name from description
-BRANCH_SUFFIX=$(echo "$REFACTOR_DESCRIPTION" | tr '[:upper:]' '[:lower:]' | sed 's/[^a-z0-9]/-/g' | sed 's/-\+/-/g' | sed 's/^-//' | sed 's/-$//')
-WORDS=$(echo "$BRANCH_SUFFIX" | tr '-' '\n' | grep -v '^$' | head -3 | tr '\n' '-' | sed 's/-$//')
+# Create branch name from description using smart filtering
+WORDS=$(generate_branch_name "$REFACTOR_DESCRIPTION")
 BRANCH_NAME="refactor/${REFACTOR_NUM}-${WORDS}"
 REFACTOR_ID="refactor-${REFACTOR_NUM}"
 
@@ -78,8 +107,10 @@ else
     >&2 echo "[refactor] Warning: Git repository not detected; skipped branch creation for $BRANCH_NAME"
 fi
 
-# Create refactor directory
-REFACTOR_DIR="$SPECS_DIR/${REFACTOR_ID}-${WORDS}"
+# Create refactor directory under refactor/ subdirectory
+REFACTOR_SUBDIR="$SPECS_DIR/refactor"
+mkdir -p "$REFACTOR_SUBDIR"
+REFACTOR_DIR="$REFACTOR_SUBDIR/${REFACTOR_NUM}-${WORDS}"
 mkdir -p "$REFACTOR_DIR"
 
 # Copy template
@@ -92,6 +123,9 @@ else
     echo "# Refactor Spec" > "$REFACTOR_SPEC_FILE"
 fi
 
+# Create symlink from spec.md to refactor-spec.md
+ln -sf "refactor-spec.md" "$REFACTOR_DIR/spec.md"
+
 # Create placeholder for metrics
 METRICS_BEFORE="$REFACTOR_DIR/metrics-before.md"
 METRICS_AFTER="$REFACTOR_DIR/metrics-after.md"
@@ -99,9 +133,11 @@ METRICS_AFTER="$REFACTOR_DIR/metrics-after.md"
 cat > "$METRICS_BEFORE" << 'EOF'
 # Baseline Metrics (Before Refactoring)
 
-**Status**: Not yet captured
+**Status**: Automatically captured during workflow creation
 
-Run the following command to capture baseline metrics:
+Baseline metrics are automatically captured when the refactor workflow is created.
+
+If you need to re-capture baseline metrics, run:
 
 ```bash
 .specify/extensions/workflows/refactor/measure-metrics.sh --before --dir "$REFACTOR_DIR"
@@ -123,6 +159,39 @@ Run the following command to capture post-refactoring metrics:
 
 This should be done AFTER refactoring is complete and all tests pass.
 EOF
+
+# Create placeholder for testing gaps assessment
+TESTING_GAPS="$REFACTOR_DIR/testing-gaps.md"
+TESTING_GAPS_TEMPLATE="$REPO_ROOT/.specify/extensions/workflows/refactor/testing-gaps-template.md"
+
+if [ -f "$TESTING_GAPS_TEMPLATE" ]; then
+    cp "$TESTING_GAPS_TEMPLATE" "$TESTING_GAPS"
+else
+    cat > "$TESTING_GAPS" << 'EOF'
+# Testing Gaps Assessment
+
+**Purpose**: Identify and address test coverage gaps BEFORE establishing baseline metrics.
+
+**Status**: [ ] Assessment Complete | [ ] Gaps Identified | [ ] Tests Added | [ ] Ready for Baseline
+
+## Phase 0: Pre-Baseline Testing Gap Analysis
+
+### Step 1: Identify Affected Functionality
+`[Document code areas that will be modified during refactoring]`
+
+### Step 2: Assess Current Test Coverage
+`[For each affected area, document current test coverage]`
+
+### Step 3: Document Gaps
+`[List critical, important, and nice-to-have testing gaps]`
+
+### Step 4: Add Missing Tests
+`[Add tests for critical gaps before proceeding to baseline]`
+
+---
+*Complete this assessment BEFORE running measure-metrics.sh --before*
+EOF
+fi
 
 # Create placeholder for behavioral snapshot
 BEHAVIORAL_SNAPSHOT="$REFACTOR_DIR/behavioral-snapshot.md"
@@ -165,13 +234,50 @@ EOF
 # Set environment variable
 export SPECIFY_REFACTOR="$REFACTOR_ID"
 
+# Capture baseline metrics automatically
+MEASURE_SCRIPT="$REPO_ROOT/.specify/extensions/workflows/refactor/measure-metrics.sh"
+if [ -f "$MEASURE_SCRIPT" ]; then
+    # Ensure script is executable
+    chmod +x "$MEASURE_SCRIPT"
+
+    if ! $JSON_MODE; then
+        echo ""
+        echo "=== Capturing Baseline Metrics ==="
+        echo ""
+    fi
+
+    # Run the measure-metrics script to capture baseline
+    if "$MEASURE_SCRIPT" --before --dir "$REFACTOR_DIR"; then
+        if ! $JSON_MODE; then
+            echo ""
+            echo "✓ Baseline metrics captured successfully"
+            echo ""
+        fi
+    else
+        if ! $JSON_MODE; then
+            echo ""
+            echo "⚠ Warning: Failed to capture baseline metrics automatically"
+            echo "  Run manually: .specify/extensions/workflows/refactor/measure-metrics.sh --before --dir $REFACTOR_DIR"
+            echo ""
+        fi
+    fi
+else
+    if ! $JSON_MODE; then
+        echo ""
+        echo "⚠ Warning: measure-metrics.sh not found at $MEASURE_SCRIPT"
+        echo "  Baseline metrics must be captured manually"
+        echo ""
+    fi
+fi
+
 if $JSON_MODE; then
-    printf '{"REFACTOR_ID":"%s","BRANCH_NAME":"%s","REFACTOR_SPEC_FILE":"%s","METRICS_BEFORE":"%s","METRICS_AFTER":"%s","BEHAVIORAL_SNAPSHOT":"%s","REFACTOR_NUM":"%s"}\n' \
-        "$REFACTOR_ID" "$BRANCH_NAME" "$REFACTOR_SPEC_FILE" "$METRICS_BEFORE" "$METRICS_AFTER" "$BEHAVIORAL_SNAPSHOT" "$REFACTOR_NUM"
+    printf '{"REFACTOR_ID":"%s","BRANCH_NAME":"%s","REFACTOR_SPEC_FILE":"%s","TESTING_GAPS":"%s","METRICS_BEFORE":"%s","METRICS_AFTER":"%s","BEHAVIORAL_SNAPSHOT":"%s","REFACTOR_NUM":"%s"}\n' \
+        "$REFACTOR_ID" "$BRANCH_NAME" "$REFACTOR_SPEC_FILE" "$TESTING_GAPS" "$METRICS_BEFORE" "$METRICS_AFTER" "$BEHAVIORAL_SNAPSHOT" "$REFACTOR_NUM"
 else
     echo "REFACTOR_ID: $REFACTOR_ID"
     echo "BRANCH_NAME: $BRANCH_NAME"
     echo "REFACTOR_SPEC_FILE: $REFACTOR_SPEC_FILE"
+    echo "TESTING_GAPS: $TESTING_GAPS"
     echo "METRICS_BEFORE: $METRICS_BEFORE"
     echo "METRICS_AFTER: $METRICS_AFTER"
     echo "BEHAVIORAL_SNAPSHOT: $BEHAVIORAL_SNAPSHOT"
