@@ -34,7 +34,7 @@
 		"submenus": [
 			{
 				"id": "confignore.submenu",
-				"label": "Add to Ignore"
+				"label": "$(exclude) Add to Ignore"
 			}
 		],
 		"commands": [

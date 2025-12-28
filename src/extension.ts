@@ -6,6 +6,31 @@ import { addToTsconfigExclude, detectConfigTargetsFor, guardMissingConfig, remov
 import { clearContextKeys, setFeatureFlagContext, updateContextKeys } from './services/contextKeys';
 import { resolveStates } from './services/stateResolver';
 
+// Utility: debounce function calls
+function debounce<T extends (...args: any[]) => any>(func: T, delay: number): (...args: Parameters<T>) => void {
+	let timeout: NodeJS.Timeout | undefined;
+	return (...args: Parameters<T>) => {
+		clearTimeout(timeout);
+		timeout = setTimeout(() => func(...args), delay);
+	};
+}
+
+// Utility: User-friendly error messages
+function getFriendlyErrorMessage(error: unknown, context: string): string {
+	if (error instanceof vscode.FileSystemError) {
+		if (error.code === 'FileNotFound') {
+			return `File not found. It may have been moved or deleted.`;
+		}
+		if (error.code === 'NoPermissions') {
+			return `Permission denied. Please check file permissions.`;
+		}
+	}
+	if (error instanceof Error) {
+		return `${context}: ${error.message}`;
+	}
+	return `${context}. Please try again.`;
+}
+
 type IgnoreKey = 'git' | 'docker' | 'eslint' | 'prettier' | 'npm' | 'stylelint' | 'vscode';
 
 const FEATURE_FLAG_SETTING = 'ignorer.features.includeSupport';
@@ -204,8 +229,8 @@ async function addToIgnore(type: IgnoreKey, arg0?: unknown, arg1?: unknown) {
 				const rel = toRelativePattern(folder, u, dir);
 				entries.push(rel);
 			} catch (error) {
-				void error;
-				failures.push(u.fsPath);
+				const friendlyMsg = getFriendlyErrorMessage(error, 'Unable to process file');
+				failures.push(`${path.basename(u.fsPath)}: ${friendlyMsg}`);
 			}
 		}
 
@@ -218,7 +243,7 @@ async function addToIgnore(type: IgnoreKey, arg0?: unknown, arg1?: unknown) {
 	}
 
 	if (failures.length) {
-		vscode.window.showErrorMessage(`confignore could not process: ${failures.join(', ')}`);
+		vscode.window.showErrorMessage(`Confignore: ${failures.join('; ')}`);
 	}
 }
 
@@ -260,6 +285,21 @@ export function activate(context: vscode.ExtensionContext) {
 		channel.appendLine('[confignore] clearContextKeys error: ' + String(err));
 	});
 
+	// First-run welcome message
+	const hasSeenWelcome = context.globalState.get<boolean>('confignore.hasSeenWelcome', false);
+	if (!hasSeenWelcome) {
+		vscode.window.showInformationMessage(
+			'Welcome to Confignore! Right-click any file in Explorer and choose "Add to Ignore" to get started.',
+			'Got it',
+			'Learn More'
+		).then(action => {
+			if (action === 'Learn More') {
+				vscode.env.openExternal(vscode.Uri.parse('https://github.com/pradeepmouli/confignore#readme'));
+			}
+		});
+		context.globalState.update('confignore.hasSeenWelcome', true);
+	}
+
 	// Subscribe to selection changes to update context keys
 	let lastSelection: vscode.Uri[] = [];
 	const updateSelection = async () => {
@@ -279,9 +319,22 @@ export function activate(context: vscode.ExtensionContext) {
 		}
 	};
 
+	// Debounced version for document changes
+	const debouncedUpdateSelection = debounce(updateSelection, 500);
+
+	// Only trigger debounced updates for relevant file changes
+	const relevantFiles = ['.gitignore', '.dockerignore', '.eslintignore', '.prettierignore', '.npmignore', '.stylelintignore', '.vscodeignore', 'tsconfig.json', '.eslintrc', '.prettierrc'];
+	const onDocumentChange = (e: vscode.TextDocumentChangeEvent) => {
+		const filename = path.basename(e.document.uri.fsPath);
+		const isRelevant = relevantFiles.some(f => filename.includes(f.replace(/\./g, '')));
+		if (isRelevant) {
+			debouncedUpdateSelection();
+		}
+	};
+
 	context.subscriptions.push(
 		vscode.window.onDidChangeActiveTextEditor(() => updateSelection()),
-		vscode.workspace.onDidChangeTextDocument(() => updateSelection())
+		vscode.workspace.onDidChangeTextDocument(onDocumentChange)
 	);
 
 	context.subscriptions.push(
