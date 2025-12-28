@@ -62,7 +62,7 @@ diagnostics.
 
 Development activities SHALL use the appropriate workflow type based on the nature of the work. Each workflow enforces specific quality gates and documentation requirements tailored to its purpose:
 
-- **Feature Development** (`/specify`): New functionality - requires full specification, planning, and TDD approach
+- **Feature Development** (`/speckit.specify`): New functionality - requires full specification, planning, and TDD approach
 - **Bug Fixes** (`/speckit.bugfix`): Defect remediation - requires regression test BEFORE applying fix
 - **Modifications** (`/speckit.modify`): Changes to existing features - requires impact analysis and backward compatibility assessment
 - **Refactoring** (`/speckit.refactor`): Code quality improvements - requires baseline metrics, behavior preservation guarantee, and incremental validation
@@ -73,7 +73,7 @@ The wrong workflow SHALL NOT be used - features must not bypass specification, b
 
 ### Core Workflow (Feature Development)
 
-1. Feature request initiates with `/specify <description>`
+1. Feature request initiates with `/speckit.specify <description>`
 2. Clarification via clarification questions to resolve ambiguities
 3. Technical planning with `/speckit.plan` to create implementation design
 4. Task breakdown using `/speckit.tasks` for execution roadmap
@@ -81,9 +81,9 @@ The wrong workflow SHALL NOT be used - features must not bypass specification, b
 
 ### Extension Workflows
 
-- **Baseline**: `/baseline` → baseline-spec.md + current-state.md establishing project context
+- **Baseline**: `/speckit.baseline` → baseline-spec.md + current-state.md establishing project context
 - **Bugfix**: `/speckit.bugfix "<description>"` → bug-report.md + tasks.md with regression test requirement
-- **Enhancement**: `/enhance "<description>"` → enhancement.md (condensed single-doc with spec + plan + tasks)
+- **Enhancement**: `/speckit.enhance "<description>"` → enhancement.md (condensed single-doc with spec + plan + tasks)
 - **Modification**: `/speckit.modify <feature_num> "<description>"` → modification.md + impact analysis + tasks.md
 - **Refactor**: `/speckit.refactor "<description>"` → refactor.md + baseline metrics + incremental tasks.md
 - **Hotfix**: `/speckit.hotfix "<incident>"` → hotfix.md + expedited tasks.md + post-mortem.md (within 48 hours)
@@ -91,13 +91,13 @@ The wrong workflow SHALL NOT be used - features must not bypass specification, b
 
 ### Quality Gates by Workflow Type
 
-**Baseline** (`/baseline`):
+**Baseline** (`/speckit.baseline`):
 - Comprehensive project analysis MUST be performed
 - All major components MUST be documented in baseline-spec.md
 - Current state MUST enumerate all changes by workflow type
 - Architecture and technology stack MUST be accurately captured
 
-**Feature Development** (`/specify`):
+**Feature Development** (`/speckit.specify`):
 - Specification MUST be complete before planning
 - Plan MUST pass constitution checks before task generation
 - Tests MUST be written before implementation (TDD)
@@ -114,7 +114,7 @@ The wrong workflow SHALL NOT be used - features must not bypass specification, b
 - Prevention strategy MUST be defined
 - All standard quality gates apply (typecheck, lint, build, tests)
 
-**Enhancement** (`/enhance`):
+**Enhancement** (`/speckit.enhance`):
 - Enhancement MUST be scoped to a single-phase plan with no more than 7 tasks
 - Changes MUST be clearly defined in the enhancement document
 - Tests MUST be added for new behavior
