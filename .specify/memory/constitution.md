@@ -2,16 +2,17 @@
 
 <!--
 Sync Impact Report
-- Version change: 1.0.0 → 1.1.0
+- Version change: 1.1.0 → 1.2.0
 - Modified principles: none
-- Added sections: Workflow Selection; Extension Workflows; Quality Gates by Workflow Type
+- Added sections: Baseline workflow in Workflow Selection and Extension Workflows; Enhancement workflow in Workflow Selection and Extension Workflows; Review workflow in Extension Workflows; Cleanup workflow in Extension Workflows; Quality gates for Baseline and Enhancement workflows
 - Removed sections: none
 - Templates requiring updates:
 	- ✅ .specify/templates/plan-template.md (Constitution Check gates aligned)
 	- ✅ .specify/templates/spec-template.md (no conflicts)
 	- ✅ .specify/templates/tasks-template.md (no conflicts)
 	- ✅ Extension workflow templates (bugfix, modify, refactor, hotfix, deprecate)
-- Follow-up TODOs: none
+	- 🔲 New workflow templates needed: baseline, enhancement, review, cleanup
+- Follow-up TODOs: Create templates for new workflows (baseline, enhancement, review, cleanup)
 -->
 
 ## Core Principles
@@ -62,18 +63,20 @@ diagnostics.
 
 Development activities SHALL use the appropriate workflow type based on the nature of the work. Each workflow enforces specific quality gates and documentation requirements tailored to its purpose:
 
-- **Feature Development** (`/speckit.specify`): New functionality - requires full specification, planning, and TDD approach
+- **Baseline** (`/speckit.baseline`): Project context establishment - requires comprehensive documentation of existing architecture and change tracking
+- **Feature Development** (`/specify`): New functionality - requires full specification, planning, and TDD approach
 - **Bug Fixes** (`/speckit.bugfix`): Defect remediation - requires regression test BEFORE applying fix
+- **Enhancements** (`/speckit.enhance`): Minor improvements to existing features - streamlined single-document workflow with simple single-phase plan (max 7 tasks)
 - **Modifications** (`/speckit.modify`): Changes to existing features - requires impact analysis and backward compatibility assessment
 - **Refactoring** (`/speckit.refactor`): Code quality improvements - requires baseline metrics, behavior preservation guarantee, and incremental validation
 - **Hotfixes** (`/speckit.hotfix`): Emergency production issues - expedited process with deferred testing and mandatory post-mortem
 - **Deprecation** (`/speckit.deprecate`): Feature sunset - requires phased rollout (warnings → disabled → removed), migration guide, and stakeholder approvals
 
-The wrong workflow SHALL NOT be used - features must not bypass specification, bugs must not skip regression tests, and refactorings must not alter behavior.
+The wrong workflow SHALL NOT be used - features must not bypass specification, bugs must not skip regression tests, refactorings must not alter behavior, and enhancements requiring complex multi-phase plans must use full feature development workflow.
 
 ### Core Workflow (Feature Development)
 
-1. Feature request initiates with `/speckit.specify <description>`
+1. Feature request initiates with `/specify <description>`
 2. Clarification via clarification questions to resolve ambiguities
 3. Technical planning with `/speckit.plan` to create implementation design
 4. Task breakdown using `/speckit.tasks` for execution roadmap
@@ -88,6 +91,8 @@ The wrong workflow SHALL NOT be used - features must not bypass specification, b
 - **Refactor**: `/speckit.refactor "<description>"` → refactor.md + baseline metrics + incremental tasks.md
 - **Hotfix**: `/speckit.hotfix "<incident>"` → hotfix.md + expedited tasks.md + post-mortem.md (within 48 hours)
 - **Deprecation**: `/speckit.deprecate <feature_num> "<reason>"` → deprecation.md + dependency scan + phased tasks.md
+- **Review**: `/speckit.review <task_id>` → review implementation against spec + update tasks.md + generate report
+- **Cleanup**: `/speckit.cleanup` → organize specs/ directory + archive old branches + update documentation
 
 ### Quality Gates by Workflow Type
 
@@ -97,7 +102,7 @@ The wrong workflow SHALL NOT be used - features must not bypass specification, b
 - Current state MUST enumerate all changes by workflow type
 - Architecture and technology stack MUST be accurately captured
 
-**Feature Development** (`/speckit.specify`):
+**Feature Development** (`/specify`):
 - Specification MUST be complete before planning
 - Plan MUST pass constitution checks before task generation
 - Tests MUST be written before implementation (TDD)
@@ -162,4 +167,4 @@ Versioning policy: MAJOR for incompatible governance changes; MINOR for added or
 materially expanded sections; PATCH for clarifications. Compliance is reviewed in
 every PR via “Constitution Check” in plans.
 
-**Version**: 1.1.0 | **Ratified**: 2025-11-04 | **Last Amended**: 2025-12-08
+**Version**: 1.2.0 | **Ratified**: 2025-11-04 | **Last Amended**: 2025-12-27
