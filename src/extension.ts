@@ -31,6 +31,25 @@ function getFriendlyErrorMessage(error: unknown, context: string): string {
 	return `${context}. Please try again.`;
 }
 
+// Utility: Structured logging
+enum LogLevel {
+	INFO = 'INFO',
+	SUCCESS = 'SUCCESS',
+	WARNING = 'WARNING',
+	ERROR = 'ERROR'
+}
+
+function log(level: LogLevel, message: string, channel: vscode.OutputChannel) {
+	const timestamp = new Date().toLocaleTimeString();
+	const icons = {
+		[LogLevel.INFO]: 'ℹ️',
+		[LogLevel.SUCCESS]: '✅',
+		[LogLevel.WARNING]: '⚠️',
+		[LogLevel.ERROR]: '❌'
+	};
+	channel.appendLine(`[${timestamp}] ${icons[level]} ${level}: ${message}`);
+}
+
 type IgnoreKey = 'git' | 'docker' | 'eslint' | 'prettier' | 'npm' | 'stylelint' | 'vscode';
 
 const FEATURE_FLAG_SETTING = 'ignorer.features.includeSupport';
@@ -208,6 +227,26 @@ async function addToIgnore(type: IgnoreKey, arg0?: unknown, arg1?: unknown) {
 		return;
 	}
 
+	// Check for mixed-state selections
+	const states = await Promise.all(targets.map(async (uri) => {
+		const result = await resolveStates([uri], { includeSupportEnabled: getIncludeSupportFlag() });
+		return result.excluded;
+	}));
+	const excludedCount = states.filter(Boolean).length;
+	const totalCount = targets.length;
+
+	// Confirm if mixed state (some already excluded)
+	if (excludedCount > 0 && excludedCount < totalCount) {
+		const notExcluded = totalCount - excludedCount;
+		const result = await vscode.window.showWarningMessage(
+			`${notExcluded} of ${totalCount} selected files will be added to ignore. ${excludedCount} are already ignored.`,
+			{ modal: true },
+			'Continue',
+			'Cancel'
+		);
+		if (result !== 'Continue') {return;}
+	}
+
 	const byFolder = new Map<vscode.WorkspaceFolder, vscode.Uri[]>();
 	for (const t of targets) {
 		const folder = getWorkspaceFolder(t);
@@ -236,7 +275,17 @@ async function addToIgnore(type: IgnoreKey, arg0?: unknown, arg1?: unknown) {
 
 		const changed = await appendUniqueLines(ignoreFile, entries);
 		if (changed) {
-			vscode.window.setStatusBarMessage(`confignore: Added ${entries.length} entr${entries.length === 1 ? 'y' : 'ies'} to ${IGNORE_MAP[type].file}`, 3000);
+			// Enhanced status message with actions
+			vscode.window.showInformationMessage(
+				`Added ${entries.length} entr${entries.length === 1 ? 'y' : 'ies'} to ${IGNORE_MAP[type].file}`,
+				'View File'
+			).then(action => {
+				if (action === 'View File') {
+					vscode.workspace.openTextDocument(ignoreFile).then(doc =>
+						vscode.window.showTextDocument(doc)
+					);
+				}
+			});
 		} else {
 			vscode.window.setStatusBarMessage(`confignore: Nothing to add to ${IGNORE_MAP[type].file}`, 3000);
 		}
@@ -249,14 +298,33 @@ async function addToIgnore(type: IgnoreKey, arg0?: unknown, arg1?: unknown) {
 
 async function quickPickAdd(arg0?: unknown, arg1?: unknown) {
 	const states = await detectCapabilities();
+	const descriptions: Record<IgnoreKey, string> = {
+		git: 'Exclude from version control',
+		docker: 'Exclude from Docker image',
+		eslint: 'Exclude from linting',
+		prettier: 'Exclude from formatting',
+		npm: 'Exclude from npm package',
+		stylelint: 'Exclude from style linting',
+		vscode: 'Exclude from VS Code extension package'
+	};
 	const items = (Object.keys(IGNORE_MAP) as IgnoreKey[])
 		.filter(k => states[k])
-		.map(k => ({ label: IGNORE_MAP[k].label, description: IGNORE_MAP[k].file, key: k }));
+		.map(k => ({
+			label: `$(file-code) ${IGNORE_MAP[k].label}`,
+			description: IGNORE_MAP[k].file,
+			detail: descriptions[k],
+			key: k
+		}));
 	if (items.length === 0) {
 		vscode.window.showInformationMessage('No relevant ignore files detected in this workspace.');
 		return;
 	}
-	const pick = await vscode.window.showQuickPick(items, { title: 'Add to Ignore', placeHolder: 'Select an ignore file' });
+	const pick = await vscode.window.showQuickPick(items, {
+		title: 'Add to Ignore',
+		placeHolder: 'Select an ignore file',
+		matchOnDescription: true,
+		matchOnDetail: true
+	});
 	if (!pick) {return;}
 	await addToIgnore(pick.key as IgnoreKey, arg0, arg1);
 }
@@ -266,23 +334,23 @@ async function quickPickAdd(arg0?: unknown, arg1?: unknown) {
 export function activate(context: vscode.ExtensionContext) {
 	const channel = vscode.window.createOutputChannel('confignore');
 	context.subscriptions.push(channel);
-	channel.appendLine('[confignore] Activated');
+	log(LogLevel.INFO, 'Extension activated', channel);
 
 	let includeSupportEnabled = getIncludeSupportFlag();
 	setFeatureFlagContext(includeSupportEnabled).catch(err => {
-		channel.appendLine('[confignore] setFeatureFlagContext error: ' + String(err));
+		log(LogLevel.ERROR, `setFeatureFlagContext error: ${String(err)}`, channel);
 	});
 
 	// Initialize detection on activation
 	detectCapabilities().then(states => {
-		channel.appendLine('[confignore] Detected targets: ' + JSON.stringify(states));
+		log(LogLevel.INFO, `Detected targets: ${JSON.stringify(states)}`, channel);
 	}).catch(err => {
-		channel.appendLine('[confignore] detectCapabilities error: ' + String(err));
+		log(LogLevel.ERROR, `detectCapabilities error: ${String(err)}`, channel);
 	});
 
 	// Initialize context keys
 	clearContextKeys().catch(err => {
-		channel.appendLine('[confignore] clearContextKeys error: ' + String(err));
+		log(LogLevel.ERROR, `clearContextKeys error: ${String(err)}`, channel);
 	});
 
 	// First-run welcome message
