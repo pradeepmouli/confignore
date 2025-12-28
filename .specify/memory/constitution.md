@@ -91,6 +91,12 @@ The wrong workflow SHALL NOT be used - features must not bypass specification, b
 
 ### Quality Gates by Workflow Type
 
+**Baseline** (`/baseline`):
+- Comprehensive project analysis MUST be performed
+- All major components MUST be documented in baseline-spec.md
+- Current state MUST enumerate all changes by workflow type
+- Architecture and technology stack MUST be accurately captured
+
 **Feature Development** (`/specify`):
 - Specification MUST be complete before planning
 - Plan MUST pass constitution checks before task generation
@@ -106,6 +112,13 @@ The wrong workflow SHALL NOT be used - features must not bypass specification, b
 - Regression test MUST be written before fix is applied
 - Root cause MUST be identified and documented
 - Prevention strategy MUST be defined
+- All standard quality gates apply (typecheck, lint, build, tests)
+
+**Enhancement** (`/enhance`):
+- Enhancement MUST be scoped to a single-phase plan with no more than 7 tasks
+- Changes MUST be clearly defined in the enhancement document
+- Tests MUST be added for new behavior
+- If complexity exceeds single-phase scope, full feature workflow MUST be used instead
 - All standard quality gates apply (typecheck, lint, build, tests)
 
 **Modification** (`/speckit.modify`):
