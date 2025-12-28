@@ -50,14 +50,14 @@ ARGS=()
 for arg in "$@"; do
     case "$arg" in
         --json) JSON_MODE=true ;;
-        --help|-h) echo "Usage: $0 [--json] <bug_description>"; exit 0 ;;
+        --help|-h) echo "Usage: $0 [--json] <enhancement_description>"; exit 0 ;;
         *) ARGS+=("$arg") ;;
     esac
 done
 
-BUG_DESCRIPTION="${ARGS[*]}"
-if [ -z "$BUG_DESCRIPTION" ]; then
-    echo "Usage: $0 [--json] <bug_description>" >&2
+ENHANCEMENT_DESCRIPTION="${ARGS[*]}"
+if [ -z "$ENHANCEMENT_DESCRIPTION" ]; then
+    echo "Usage: $0 [--json] <enhancement_description>" >&2
     exit 1
 fi
 
@@ -70,10 +70,10 @@ cd "$REPO_ROOT"
 SPECS_DIR="$REPO_ROOT/specs"
 mkdir -p "$SPECS_DIR"
 
-# Find highest bugfix number
+# Find highest enhance number
 HIGHEST=0
-if [ -d "$SPECS_DIR/bugfix" ]; then
-    for dir in "$SPECS_DIR"/bugfix/*/; do
+if [ -d "$SPECS_DIR/enhance" ]; then
+    for dir in "$SPECS_DIR"/enhance/*/; do
         [ -d "$dir" ] || continue
         dirname=$(basename "$dir")
         number=$(echo "$dirname" | grep -o '^[0-9]\+' || echo "0")
@@ -83,49 +83,49 @@ if [ -d "$SPECS_DIR/bugfix" ]; then
 fi
 
 NEXT=$((HIGHEST + 1))
-BUG_NUM=$(printf "%03d" "$NEXT")
+ENHANCE_NUM=$(printf "%03d" "$NEXT")
 
 # Create branch name from description using smart filtering
-WORDS=$(generate_branch_name "$BUG_DESCRIPTION")
-BRANCH_NAME="bugfix/${BUG_NUM}-${WORDS}"
-BUG_ID="bugfix-${BUG_NUM}"
+WORDS=$(generate_branch_name "$ENHANCEMENT_DESCRIPTION")
+BRANCH_NAME="enhance/${ENHANCE_NUM}-${WORDS}"
+ENHANCE_ID="enhance-${ENHANCE_NUM}"
 
 # Create git branch if git available
 if [ "$HAS_GIT" = true ]; then
     git checkout -b "$BRANCH_NAME"
 else
-    >&2 echo "[bugfix] Warning: Git repository not detected; skipped branch creation for $BRANCH_NAME"
+    >&2 echo "[enhance] Warning: Git repository not detected; skipped branch creation for $BRANCH_NAME"
 fi
 
-# Create bug directory under bugfix/ subdirectory
-BUGFIX_SUBDIR="$SPECS_DIR/bugfix"
-mkdir -p "$BUGFIX_SUBDIR"
-BUG_DIR="$BUGFIX_SUBDIR/${BUG_NUM}-${WORDS}"
-mkdir -p "$BUG_DIR"
+# Create enhancement directory under enhance/ subdirectory
+ENHANCE_SUBDIR="$SPECS_DIR/enhance"
+mkdir -p "$ENHANCE_SUBDIR"
+ENHANCE_DIR="$ENHANCE_SUBDIR/${ENHANCE_NUM}-${WORDS}"
+mkdir -p "$ENHANCE_DIR"
 
 # Copy template
-BUGFIX_TEMPLATE="$REPO_ROOT/.specify/extensions/workflows/bugfix/bug-report-template.md"
-BUG_REPORT_FILE="$BUG_DIR/bug-report.md"
+ENHANCE_TEMPLATE="$REPO_ROOT/.specify/extensions/workflows/enhance/enhancement-template.md"
+ENHANCEMENT_FILE="$ENHANCE_DIR/enhancement.md"
 
-if [ -f "$BUGFIX_TEMPLATE" ]; then
-    cp "$BUGFIX_TEMPLATE" "$BUG_REPORT_FILE"
+if [ -f "$ENHANCE_TEMPLATE" ]; then
+    cp "$ENHANCE_TEMPLATE" "$ENHANCEMENT_FILE"
 else
-    echo "# Bug Report" > "$BUG_REPORT_FILE"
+    echo "# Enhancement" > "$ENHANCEMENT_FILE"
 fi
 
-# Create symlink from spec.md to bug-report.md
-ln -sf "bug-report.md" "$BUG_DIR/spec.md"
+# Create symlink from spec.md to enhancement.md
+ln -sf "enhancement.md" "$ENHANCE_DIR/spec.md"
 
 # Set environment variable for current session
-export SPECIFY_BUGFIX="$BUG_ID"
+export SPECIFY_ENHANCE="$ENHANCE_ID"
 
 if $JSON_MODE; then
-    printf '{"BUG_ID":"%s","BRANCH_NAME":"%s","BUG_REPORT_FILE":"%s","BUG_NUM":"%s"}\n' \
-        "$BUG_ID" "$BRANCH_NAME" "$BUG_REPORT_FILE" "$BUG_NUM"
+    printf '{"ENHANCE_ID":"%s","BRANCH_NAME":"%s","ENHANCEMENT_FILE":"%s","ENHANCE_NUM":"%s"}\n' \
+        "$ENHANCE_ID" "$BRANCH_NAME" "$ENHANCEMENT_FILE" "$ENHANCE_NUM"
 else
-    echo "BUG_ID: $BUG_ID"
+    echo "ENHANCE_ID: $ENHANCE_ID"
     echo "BRANCH_NAME: $BRANCH_NAME"
-    echo "BUG_REPORT_FILE: $BUG_REPORT_FILE"
-    echo "BUG_NUM: $BUG_NUM"
-    echo "SPECIFY_BUGFIX environment variable set to: $BUG_ID"
+    echo "ENHANCEMENT_FILE: $ENHANCEMENT_FILE"
+    echo "ENHANCE_NUM: $ENHANCE_NUM"
+    echo "SPECIFY_ENHANCE environment variable set to: $ENHANCE_ID"
 fi

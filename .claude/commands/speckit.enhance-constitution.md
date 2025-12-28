@@ -1,16 +1,20 @@
+---
+name: speckit.enhance-constitution
+description: One-time command to enhance constitution with workflow quality gates using LLM intelligence
+handoffs:
+  - speckit.plan
+  - speckit.tasks
+---
+
 # Constitution Enhancement (One-Time Use)
-
-**IMPORTANT**: This is a one-time prompt. After using it, delete this file to prevent accidental re-use.
-
-## Your Task
 
 You are enhancing the project's constitution file (`.specify/memory/constitution.md`) with workflow-specific quality gates.
 
-### Steps:
+## Your Task
 
 1. **Read the current constitution**: `.specify/memory/constitution.md`
 2. **Review the template below**: Contains workflow selection guidelines and quality gates
-3. **Intelligently merge the content**:
+3. **Intelligently merge**: Use `/specify.constitution` to:
    - Preserve all existing constitution content
    - Add missing workflow selection guidance
    - Add missing quality gates for each workflow type
@@ -18,9 +22,8 @@ You are enhancing the project's constitution file (`.specify/memory/constitution
    - Avoid duplicating content that already exists
    - Ensure smooth integration without jarring transitions
 
-4. **Self-destruct**: After updating the constitution, DELETE both files
-   - Prompt: `.github/prompts/speckit.enhance-constitution.prompt.md`
-   - Agent: `.github/agents/speckit.enhance-constitution.md`
+4. **Self-destruct**: After updating the constitution, DELETE this command file
+   - Location: `.claude/commands/speckit.enhance-constitution.md`
    - This prevents accidental re-use
 
 ## Template Content to Integrate
@@ -112,13 +115,19 @@ The wrong workflow SHALL NOT be used - features must not bypass specification, b
 - Stakeholder approvals MUST be obtained before starting
 ```
 
+## Instructions
+
+1. First, run `/specify.constitution` with instructions to merge the above template content intelligently
+2. Review the updated constitution to ensure quality
+3. Then delete this command file: `.claude/commands/speckit.enhance-constitution.md`
+
 ## Important Notes
 
 - **Preserve existing content**: Don't remove or significantly alter existing constitution sections
 - **Match style**: Adapt template language to match existing constitution's tone
 - **Section numbering**: Continue existing numbering scheme (Roman numerals, numeric, or none)
 - **No duplication**: If workflow guidance already exists, enhance rather than duplicate
-- **One-time only**: This prompt deletes itself after use to prevent confusion
+- **One-time only**: This command deletes itself after use to prevent confusion
 
 ---
 
