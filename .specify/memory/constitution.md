@@ -81,7 +81,9 @@ The wrong workflow SHALL NOT be used - features must not bypass specification, b
 
 ### Extension Workflows
 
+- **Baseline**: `/baseline` → baseline-spec.md + current-state.md establishing project context
 - **Bugfix**: `/speckit.bugfix "<description>"` → bug-report.md + tasks.md with regression test requirement
+- **Enhancement**: `/enhance "<description>"` → enhancement.md (condensed single-doc with spec + plan + tasks)
 - **Modification**: `/speckit.modify <feature_num> "<description>"` → modification.md + impact analysis + tasks.md
 - **Refactor**: `/speckit.refactor "<description>"` → refactor.md + baseline metrics + incremental tasks.md
 - **Hotfix**: `/speckit.hotfix "<incident>"` → hotfix.md + expedited tasks.md + post-mortem.md (within 48 hours)
