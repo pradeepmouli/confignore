@@ -16,9 +16,7 @@ Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how 
 - Confirmation dialog for mixed-state selections (when some files are already ignored)
 - Structured logging with severity levels (INFO, SUCCESS, WARNING, ERROR) in output channel
 - Configuration settings:
-  - `confignore.defaultIgnoreFile`: Set preferred default ignore file
   - `confignore.confirmMixedState`: Control confirmation dialogs (default: true)
-  - `confignore.checkDuplicates`: Enable duplicate detection (default: true)
 
 ### Changed
 - Debounced state updates (500ms) for relevant file changes only, improving performance
