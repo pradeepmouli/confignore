@@ -71,16 +71,6 @@ function normalizePattern(pattern: string): string {
 		.trim();
 }
 
-function checkDuplicates(newPattern: string, existingLines: string[]): boolean {
-	const normalized = normalizePattern(newPattern);
-	if (!normalized) {return true;} // Empty pattern considered duplicate
-	return existingLines.some(line => {
-		const trimmed = line.trim();
-		if (trimmed.startsWith('#') || !trimmed) {return false;}
-		return normalizePattern(trimmed) === normalized;
-	});
-}
-
 type IgnoreKey = 'git' | 'docker' | 'eslint' | 'prettier' | 'npm' | 'stylelint' | 'vscode';
 
 const FEATURE_FLAG_SETTING = 'ignorer.features.includeSupport';
