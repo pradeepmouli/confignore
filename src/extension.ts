@@ -16,12 +16,12 @@ function debounce<T extends (...args: any[]) => any>(func: T, delay: number): (.
 				const result = func(...args);
 				if (result instanceof Promise) {
 					result.catch((error) => {
-						const message = getFriendlyErrorMessage(error, 'An error occurred while running a debounced operation');
+						const message = getFriendlyErrorMessage(error, 'Debounced function returned rejected promise');
 						console.error(message);
 					});
 				}
 			} catch (error) {
-				const message = getFriendlyErrorMessage(error, 'An error occurred while running a debounced operation');
+				const message = getFriendlyErrorMessage(error, 'Debounced function threw exception');
 				console.error(message);
 			}
 		}, delay);
