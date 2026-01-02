@@ -11,7 +11,20 @@ function debounce<T extends (...args: any[]) => any>(func: T, delay: number): (.
 	let timeout: NodeJS.Timeout | undefined;
 	return (...args: Parameters<T>) => {
 		clearTimeout(timeout);
-		timeout = setTimeout(() => func(...args), delay);
+		timeout = setTimeout(() => {
+			try {
+				const result = func(...args);
+				if (result && typeof (result as any).then === 'function' && typeof (result as any).catch === 'function') {
+					(result as Promise<unknown>).catch((error) => {
+						const message = getFriendlyErrorMessage(error, 'An error occurred while running a debounced operation');
+						console.error(message);
+					});
+				}
+			} catch (error) {
+				const message = getFriendlyErrorMessage(error, 'An error occurred while running a debounced operation');
+				console.error(message);
+			}
+		}, delay);
 	};
 }
 
@@ -224,7 +237,15 @@ async function appendUniqueLines(file: vscode.Uri, newLines: string[]): Promise<
 	const buf = await vscode.workspace.fs.readFile(file);
 	let content = Buffer.from(buf).toString('utf8');
 	const existingLines = content.split(/\r?\n/);
-	const existing = new Set(existingLines.map(l => l.trim()).filter(l => l.length > 0));
+	
+	// Build a normalized set for faster duplicate detection
+	const normalizedExisting = new Set<string>();
+	existingLines.forEach(line => {
+		const trimmed = line.trim();
+		if (trimmed.length > 0 && !trimmed.startsWith('#')) {
+			normalizedExisting.add(normalizePattern(trimmed));
+		}
+	});
 
 	const duplicates: string[] = [];
 	const toAdd: string[] = [];
@@ -232,10 +253,12 @@ async function appendUniqueLines(file: vscode.Uri, newLines: string[]): Promise<
 	for (const line of newLines) {
 		const trimmed = line.trim();
 		if (trimmed.length === 0) {continue;}
-		if (existing.has(trimmed) || checkDuplicates(trimmed, existingLines)) {
+		const normalized = normalizePattern(trimmed);
+		if (normalizedExisting.has(normalized)) {
 			duplicates.push(trimmed);
 		} else {
 			toAdd.push(trimmed);
+			normalizedExisting.add(normalized); // Prevent duplicates within newLines
 		}
 	}
 
@@ -327,10 +350,15 @@ async function addToIgnore(type: IgnoreKey, arg0?: unknown, arg1?: unknown) {
 				'View File'
 			).then(action => {
 				if (action === 'View File') {
-					vscode.workspace.openTextDocument(ignoreFile).then(doc =>
-						vscode.window.showTextDocument(doc)
-					);
+					vscode.workspace.openTextDocument(ignoreFile)
+						.then(doc => vscode.window.showTextDocument(doc), (error: unknown) => {
+							console.error('Confignore: Failed to open or show ignore file', error);
+							vscode.window.showErrorMessage('Confignore: Failed to open ignore file. See console for details.');
+						});
 				}
+			}, (error: unknown) => {
+				// Handle unexpected rejection from showInformationMessage
+				console.error('Confignore: Failed to show information message', error);
 			});
 		} else {
 			if (result.duplicates.length > 0) {
@@ -412,10 +440,12 @@ export function activate(context: vscode.ExtensionContext) {
 			'Learn More'
 		).then(action => {
 			if (action === 'Learn More') {
-				vscode.env.openExternal(vscode.Uri.parse('https://github.com/pradeepmouli/confignore#readme'));
+				void vscode.env.openExternal(vscode.Uri.parse('https://github.com/pradeepmouli/confignore#readme'));
 			}
 		});
-		context.globalState.update('confignore.hasSeenWelcome', true);
+		context.globalState.update('confignore.hasSeenWelcome', true).then(undefined, (err: unknown) => {
+			log(LogLevel.ERROR, `globalState update error: ${String(err)}`, channel);
+		});
 	}
 
 	// Subscribe to selection changes to update context keys
@@ -444,7 +474,9 @@ export function activate(context: vscode.ExtensionContext) {
 	const relevantFiles = ['.gitignore', '.dockerignore', '.eslintignore', '.prettierignore', '.npmignore', '.stylelintignore', '.vscodeignore', 'tsconfig.json', '.eslintrc', '.prettierrc'];
 	const onDocumentChange = (e: vscode.TextDocumentChangeEvent) => {
 		const filename = path.basename(e.document.uri.fsPath);
-		const isRelevant = relevantFiles.some(f => filename.includes(f.replace(/\./g, '')));
+		const isRelevant = relevantFiles.some(f =>
+			filename === f || filename.startsWith(`${f}.`)
+		);
 		if (isRelevant) {
 			debouncedUpdateSelection();
 		}

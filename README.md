@@ -46,7 +46,7 @@ This extension contributes the following settings:
   - **Note**: After toggling this setting, you must reload the VS Code window for changes to take effect
 
 - **`confignore.defaultIgnoreFile`** (string, default: "git")
-  - Default ignore file to use with quick add command
+  - Reserved for a future "quick add" command (currently has no effect)
   - Options: git, docker, eslint, prettier, npm, stylelint, vscode
 
 - **`confignore.confirmMixedState`** (boolean, default: true)
@@ -54,8 +54,8 @@ This extension contributes the following settings:
   - Helps prevent accidental operations when some files are already ignored
 
 - **`confignore.checkDuplicates`** (boolean, default: true)
-  - Detect and skip duplicate patterns when adding to ignore files
-  - Normalizes patterns (e.g., `./temp/` and `temp` are treated as duplicates)
+  - _Currently has no effect; duplicate pattern detection is always enabled._
+  - When implemented, this setting will control whether patterns are normalized and checked for duplicates (e.g., `./temp/` and `temp` treated as the same)
 
 ## Known Issues
 
