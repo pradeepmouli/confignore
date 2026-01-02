@@ -28,6 +28,22 @@
 					"default": false,
 					"description": "Enable include/unignore commands and config-based inclusion updates. Experimental feature. Reload the window after changing this setting to update available commands.",
 					"scope": "window"
+				},
+				"confignore.defaultIgnoreFile": {
+					"type": "string",
+					"enum": ["git", "docker", "eslint", "prettier", "npm", "stylelint", "vscode"],
+					"default": "git",
+					"description": "Default ignore file to use with quick add command"
+				},
+				"confignore.confirmMixedState": {
+					"type": "boolean",
+					"default": true,
+					"description": "Show confirmation dialog for mixed-state selections"
+				},
+				"confignore.checkDuplicates": {
+					"type": "boolean",
+					"default": true,
+					"description": "Detect and skip duplicate patterns when adding to ignore files"
 				}
 			}
 		},

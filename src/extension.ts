@@ -50,6 +50,24 @@ function log(level: LogLevel, message: string, channel: vscode.OutputChannel) {
 	channel.appendLine(`[${timestamp}] ${icons[level]} ${level}: ${message}`);
 }
 
+// Utility: Pattern normalization and duplicate detection
+function normalizePattern(pattern: string): string {
+	return pattern
+		.replace(/^\.\//g, '')  // Remove leading ./
+		.replace(/\/$/g, '')    // Remove trailing /
+		.trim();
+}
+
+function checkDuplicates(newPattern: string, existingLines: string[]): boolean {
+	const normalized = normalizePattern(newPattern);
+	if (!normalized) {return true;} // Empty pattern considered duplicate
+	return existingLines.some(line => {
+		const trimmed = line.trim();
+		if (trimmed.startsWith('#') || !trimmed) {return false;}
+		return normalizePattern(trimmed) === normalized;
+	});
+}
+
 type IgnoreKey = 'git' | 'docker' | 'eslint' | 'prettier' | 'npm' | 'stylelint' | 'vscode';
 
 const FEATURE_FLAG_SETTING = 'ignorer.features.includeSupport';
@@ -175,6 +193,10 @@ function getIncludeSupportFlag(): boolean {
 	return vscode.workspace.getConfiguration('ignorer.features').get<boolean>('includeSupport', false) ?? false;
 }
 
+function getConfirmMixedState(): boolean {
+	return vscode.workspace.getConfiguration('confignore').get<boolean>('confirmMixedState', true) ?? true;
+}
+
 function getWorkspaceFolder(uri: vscode.Uri): vscode.WorkspaceFolder | undefined {
 	return vscode.workspace.getWorkspaceFolder(uri);
 }
@@ -198,16 +220,35 @@ async function ensureFile(uri: vscode.Uri) {
 	}
 }
 
-async function appendUniqueLines(file: vscode.Uri, newLines: string[]) {
+async function appendUniqueLines(file: vscode.Uri, newLines: string[]): Promise<{ changed: boolean; duplicates: string[] }> {
 	const buf = await vscode.workspace.fs.readFile(file);
 	let content = Buffer.from(buf).toString('utf8');
-	const existing = new Set(content.split(/\r?\n/).map(l => l.trim()).filter(l => l.length > 0));
-	const toAdd = newLines.map(l => l.trim()).filter(l => l.length > 0 && !existing.has(l));
-	if (toAdd.length === 0) {return false;}
-	if (content.length > 0 && !content.endsWith('\n')) {content += '\n';}
+	const existingLines = content.split(/\r?\n/);
+	const existing = new Set(existingLines.map(l => l.trim()).filter(l => l.length > 0));
+	
+	const duplicates: string[] = [];
+	const toAdd: string[] = [];
+	
+	for (const line of newLines) {
+		const trimmed = line.trim();
+		if (trimmed.length === 0) {continue;}
+		if (existing.has(trimmed) || checkDuplicates(trimmed, existingLines)) {
+			duplicates.push(trimmed);
+		} else {
+			toAdd.push(trimmed);
+		}
+	}
+	
+	if (toAdd.length === 0) {
+		return { changed: false, duplicates };
+	}
+	
+	if (content.length > 0 && !content.endsWith('\n')) {
+		content += '\n';
+	}
 	content += toAdd.join('\n') + '\n';
 	await vscode.workspace.fs.writeFile(file, new TextEncoder().encode(content));
-	return true;
+	return { changed: true, duplicates };
 }
 
 function collectTargetUris(arg0?: unknown, arg1?: unknown): vscode.Uri[] {
@@ -235,8 +276,8 @@ async function addToIgnore(type: IgnoreKey, arg0?: unknown, arg1?: unknown) {
 	const excludedCount = states.filter(Boolean).length;
 	const totalCount = targets.length;
 
-	// Confirm if mixed state (some already excluded)
-	if (excludedCount > 0 && excludedCount < totalCount) {
+	// Confirm if mixed state (some already excluded) and confirmation enabled
+	if (getConfirmMixedState() && excludedCount > 0 && excludedCount < totalCount) {
 		const notExcluded = totalCount - excludedCount;
 		const result = await vscode.window.showWarningMessage(
 			`${notExcluded} of ${totalCount} selected files will be added to ignore. ${excludedCount} are already ignored.`,
@@ -273,11 +314,16 @@ async function addToIgnore(type: IgnoreKey, arg0?: unknown, arg1?: unknown) {
 			}
 		}
 
-		const changed = await appendUniqueLines(ignoreFile, entries);
-		if (changed) {
+		const result = await appendUniqueLines(ignoreFile, entries);
+		if (result.changed) {
+			const addedCount = entries.length - result.duplicates.length;
+			let message = `Added ${addedCount} entr${addedCount === 1 ? 'y' : 'ies'} to ${IGNORE_MAP[type].file}`;
+			if (result.duplicates.length > 0) {
+				message += ` (${result.duplicates.length} duplicate${result.duplicates.length === 1 ? '' : 's'} skipped)`;
+			}
 			// Enhanced status message with actions
 			vscode.window.showInformationMessage(
-				`Added ${entries.length} entr${entries.length === 1 ? 'y' : 'ies'} to ${IGNORE_MAP[type].file}`,
+				message,
 				'View File'
 			).then(action => {
 				if (action === 'View File') {
@@ -287,7 +333,11 @@ async function addToIgnore(type: IgnoreKey, arg0?: unknown, arg1?: unknown) {
 				}
 			});
 		} else {
-			vscode.window.setStatusBarMessage(`confignore: Nothing to add to ${IGNORE_MAP[type].file}`, 3000);
+			if (result.duplicates.length > 0) {
+				vscode.window.showInformationMessage(`All patterns already exist in ${IGNORE_MAP[type].file}`);
+			} else {
+				vscode.window.setStatusBarMessage(`confignore: Nothing to add to ${IGNORE_MAP[type].file}`, 3000);
+			}
 		}
 	}
 
