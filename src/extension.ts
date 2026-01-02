@@ -225,10 +225,10 @@ async function appendUniqueLines(file: vscode.Uri, newLines: string[]): Promise<
 	let content = Buffer.from(buf).toString('utf8');
 	const existingLines = content.split(/\r?\n/);
 	const existing = new Set(existingLines.map(l => l.trim()).filter(l => l.length > 0));
-	
+
 	const duplicates: string[] = [];
 	const toAdd: string[] = [];
-	
+
 	for (const line of newLines) {
 		const trimmed = line.trim();
 		if (trimmed.length === 0) {continue;}
@@ -238,11 +238,11 @@ async function appendUniqueLines(file: vscode.Uri, newLines: string[]): Promise<
 			toAdd.push(trimmed);
 		}
 	}
-	
+
 	if (toAdd.length === 0) {
 		return { changed: false, duplicates };
 	}
-	
+
 	if (content.length > 0 && !content.endsWith('\n')) {
 		content += '\n';
 	}
