@@ -45,42 +45,12 @@ This extension contributes the following settings:
   - When enabled, allows removing selections from config-based exclusions (tsconfig.json, .eslintrc.json, .prettierrc)
   - **Note**: After toggling this setting, you must reload the VS Code window for changes to take effect
 
-- **`confignore.defaultIgnoreFile`** (string, default: "git")
-  - Default ignore file to use with quick add command
-  - Options: git, docker, eslint, prettier, npm, stylelint, vscode
-
-- **`confignore.confirmMixedState`** (boolean, default: true)
-  - Show confirmation dialog when operating on selections with mixed exclusion states
-  - Helps prevent accidental operations when some files are already ignored
-
-- **`confignore.checkDuplicates`** (boolean, default: true)
-  - Detect and skip duplicate patterns when adding to ignore files
-  - Normalizes patterns (e.g., `./temp/` and `temp` are treated as duplicates)
-
 ## Known Issues
 
 - Entries already covered by a broader ignore pattern (e.g., a parent folder) are not detected; duplicates by exact line are avoided.
 - Negation patterns in ignore files (lines starting with `!`) are recognized but not fully tested across all edge cases.
 
 ## Release Notes
-
-### 0.0.4 (Upcoming)
-
-**UX Improvements:**
-- Added visual icon to "Add to Ignore" submenu for better discoverability
-- Improved quick pick dialog with descriptive icons and detailed descriptions
-- Enhanced status messages with "View File" action button
-- Implemented duplicate pattern detection with normalization
-- Added first-run welcome message for new users
-- Improved error messages with user-friendly descriptions
-- Added confirmation dialog for mixed-state selections (configurable)
-- Debounced state updates for better performance
-- Structured logging with severity levels in output channel
-
-**New Settings:**
-- `confignore.defaultIgnoreFile`: Set default ignore file for quick add
-- `confignore.confirmMixedState`: Control mixed-state confirmation dialogs
-- `confignore.checkDuplicates`: Enable/disable duplicate pattern detection
 
 ### 0.0.3
 

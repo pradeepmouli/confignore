@@ -6,68 +6,6 @@ import { addToTsconfigExclude, detectConfigTargetsFor, guardMissingConfig, remov
 import { clearContextKeys, setFeatureFlagContext, updateContextKeys } from './services/contextKeys';
 import { resolveStates } from './services/stateResolver';
 
-// Utility: debounce function calls
-function debounce<T extends (...args: any[]) => any>(func: T, delay: number): (...args: Parameters<T>) => void {
-	let timeout: NodeJS.Timeout | undefined;
-	return (...args: Parameters<T>) => {
-		clearTimeout(timeout);
-		timeout = setTimeout(() => func(...args), delay);
-	};
-}
-
-// Utility: User-friendly error messages
-function getFriendlyErrorMessage(error: unknown, context: string): string {
-	if (error instanceof vscode.FileSystemError) {
-		if (error.code === 'FileNotFound') {
-			return `File not found. It may have been moved or deleted.`;
-		}
-		if (error.code === 'NoPermissions') {
-			return `Permission denied. Please check file permissions.`;
-		}
-	}
-	if (error instanceof Error) {
-		return `${context}: ${error.message}`;
-	}
-	return `${context}. Please try again.`;
-}
-
-// Utility: Structured logging
-enum LogLevel {
-	INFO = 'INFO',
-	SUCCESS = 'SUCCESS',
-	WARNING = 'WARNING',
-	ERROR = 'ERROR'
-}
-
-function log(level: LogLevel, message: string, channel: vscode.OutputChannel) {
-	const timestamp = new Date().toLocaleTimeString();
-	const icons = {
-		[LogLevel.INFO]: 'ℹ️',
-		[LogLevel.SUCCESS]: '✅',
-		[LogLevel.WARNING]: '⚠️',
-		[LogLevel.ERROR]: '❌'
-	};
-	channel.appendLine(`[${timestamp}] ${icons[level]} ${level}: ${message}`);
-}
-
-// Utility: Pattern normalization and duplicate detection
-function normalizePattern(pattern: string): string {
-	return pattern
-		.replace(/^\.\//g, '')  // Remove leading ./
-		.replace(/\/$/g, '')    // Remove trailing /
-		.trim();
-}
-
-function checkDuplicates(newPattern: string, existingLines: string[]): boolean {
-	const normalized = normalizePattern(newPattern);
-	if (!normalized) {return true;} // Empty pattern considered duplicate
-	return existingLines.some(line => {
-		const trimmed = line.trim();
-		if (trimmed.startsWith('#') || !trimmed) {return false;}
-		return normalizePattern(trimmed) === normalized;
-	});
-}
-
 type IgnoreKey = 'git' | 'docker' | 'eslint' | 'prettier' | 'npm' | 'stylelint' | 'vscode';
 
 const FEATURE_FLAG_SETTING = 'ignorer.features.includeSupport';
@@ -193,10 +131,6 @@ function getIncludeSupportFlag(): boolean {
 	return vscode.workspace.getConfiguration('ignorer.features').get<boolean>('includeSupport', false) ?? false;
 }
 
-function getConfirmMixedState(): boolean {
-	return vscode.workspace.getConfiguration('confignore').get<boolean>('confirmMixedState', true) ?? true;
-}
-
 function getWorkspaceFolder(uri: vscode.Uri): vscode.WorkspaceFolder | undefined {
 	return vscode.workspace.getWorkspaceFolder(uri);
 }
@@ -220,35 +154,16 @@ async function ensureFile(uri: vscode.Uri) {
 	}
 }
 
-async function appendUniqueLines(file: vscode.Uri, newLines: string[]): Promise<{ changed: boolean; duplicates: string[] }> {
+async function appendUniqueLines(file: vscode.Uri, newLines: string[]) {
 	const buf = await vscode.workspace.fs.readFile(file);
 	let content = Buffer.from(buf).toString('utf8');
-	const existingLines = content.split(/\r?\n/);
-	const existing = new Set(existingLines.map(l => l.trim()).filter(l => l.length > 0));
-
-	const duplicates: string[] = [];
-	const toAdd: string[] = [];
-
-	for (const line of newLines) {
-		const trimmed = line.trim();
-		if (trimmed.length === 0) {continue;}
-		if (existing.has(trimmed) || checkDuplicates(trimmed, existingLines)) {
-			duplicates.push(trimmed);
-		} else {
-			toAdd.push(trimmed);
-		}
-	}
-
-	if (toAdd.length === 0) {
-		return { changed: false, duplicates };
-	}
-
-	if (content.length > 0 && !content.endsWith('\n')) {
-		content += '\n';
-	}
+	const existing = new Set(content.split(/\r?\n/).map(l => l.trim()).filter(l => l.length > 0));
+	const toAdd = newLines.map(l => l.trim()).filter(l => l.length > 0 && !existing.has(l));
+	if (toAdd.length === 0) {return false;}
+	if (content.length > 0 && !content.endsWith('\n')) {content += '\n';}
 	content += toAdd.join('\n') + '\n';
 	await vscode.workspace.fs.writeFile(file, new TextEncoder().encode(content));
-	return { changed: true, duplicates };
+	return true;
 }
 
 function collectTargetUris(arg0?: unknown, arg1?: unknown): vscode.Uri[] {
@@ -266,26 +181,6 @@ async function addToIgnore(type: IgnoreKey, arg0?: unknown, arg1?: unknown) {
 	if (targets.length === 0) {
 		vscode.window.showWarningMessage('No target selected. Please right-click a file or folder in the Explorer.');
 		return;
-	}
-
-	// Check for mixed-state selections
-	const states = await Promise.all(targets.map(async (uri) => {
-		const result = await resolveStates([uri], { includeSupportEnabled: getIncludeSupportFlag() });
-		return result.excluded;
-	}));
-	const excludedCount = states.filter(Boolean).length;
-	const totalCount = targets.length;
-
-	// Confirm if mixed state (some already excluded) and confirmation enabled
-	if (getConfirmMixedState() && excludedCount > 0 && excludedCount < totalCount) {
-		const notExcluded = totalCount - excludedCount;
-		const result = await vscode.window.showWarningMessage(
-			`${notExcluded} of ${totalCount} selected files will be added to ignore. ${excludedCount} are already ignored.`,
-			{ modal: true },
-			'Continue',
-			'Cancel'
-		);
-		if (result !== 'Continue') {return;}
 	}
 
 	const byFolder = new Map<vscode.WorkspaceFolder, vscode.Uri[]>();
@@ -309,72 +204,34 @@ async function addToIgnore(type: IgnoreKey, arg0?: unknown, arg1?: unknown) {
 				const rel = toRelativePattern(folder, u, dir);
 				entries.push(rel);
 			} catch (error) {
-				const friendlyMsg = getFriendlyErrorMessage(error, 'Unable to process file');
-				failures.push(`${path.basename(u.fsPath)}: ${friendlyMsg}`);
+				void error;
+				failures.push(u.fsPath);
 			}
 		}
 
-		const result = await appendUniqueLines(ignoreFile, entries);
-		if (result.changed) {
-			const addedCount = entries.length - result.duplicates.length;
-			let message = `Added ${addedCount} entr${addedCount === 1 ? 'y' : 'ies'} to ${IGNORE_MAP[type].file}`;
-			if (result.duplicates.length > 0) {
-				message += ` (${result.duplicates.length} duplicate${result.duplicates.length === 1 ? '' : 's'} skipped)`;
-			}
-			// Enhanced status message with actions
-			vscode.window.showInformationMessage(
-				message,
-				'View File'
-			).then(action => {
-				if (action === 'View File') {
-					vscode.workspace.openTextDocument(ignoreFile).then(doc =>
-						vscode.window.showTextDocument(doc)
-					);
-				}
-			});
+		const changed = await appendUniqueLines(ignoreFile, entries);
+		if (changed) {
+			vscode.window.setStatusBarMessage(`confignore: Added ${entries.length} entr${entries.length === 1 ? 'y' : 'ies'} to ${IGNORE_MAP[type].file}`, 3000);
 		} else {
-			if (result.duplicates.length > 0) {
-				vscode.window.showInformationMessage(`All patterns already exist in ${IGNORE_MAP[type].file}`);
-			} else {
-				vscode.window.setStatusBarMessage(`confignore: Nothing to add to ${IGNORE_MAP[type].file}`, 3000);
-			}
+			vscode.window.setStatusBarMessage(`confignore: Nothing to add to ${IGNORE_MAP[type].file}`, 3000);
 		}
 	}
 
 	if (failures.length) {
-		vscode.window.showErrorMessage(`Confignore: ${failures.join('; ')}`);
+		vscode.window.showErrorMessage(`confignore could not process: ${failures.join(', ')}`);
 	}
 }
 
 async function quickPickAdd(arg0?: unknown, arg1?: unknown) {
 	const states = await detectCapabilities();
-	const descriptions: Record<IgnoreKey, string> = {
-		git: 'Exclude from version control',
-		docker: 'Exclude from Docker image',
-		eslint: 'Exclude from linting',
-		prettier: 'Exclude from formatting',
-		npm: 'Exclude from npm package',
-		stylelint: 'Exclude from style linting',
-		vscode: 'Exclude from VS Code extension package'
-	};
 	const items = (Object.keys(IGNORE_MAP) as IgnoreKey[])
 		.filter(k => states[k])
-		.map(k => ({
-			label: `$(file-code) ${IGNORE_MAP[k].label}`,
-			description: IGNORE_MAP[k].file,
-			detail: descriptions[k],
-			key: k
-		}));
+		.map(k => ({ label: IGNORE_MAP[k].label, description: IGNORE_MAP[k].file, key: k }));
 	if (items.length === 0) {
 		vscode.window.showInformationMessage('No relevant ignore files detected in this workspace.');
 		return;
 	}
-	const pick = await vscode.window.showQuickPick(items, {
-		title: 'Add to Ignore',
-		placeHolder: 'Select an ignore file',
-		matchOnDescription: true,
-		matchOnDetail: true
-	});
+	const pick = await vscode.window.showQuickPick(items, { title: 'Add to Ignore', placeHolder: 'Select an ignore file' });
 	if (!pick) {return;}
 	await addToIgnore(pick.key as IgnoreKey, arg0, arg1);
 }
@@ -384,39 +241,24 @@ async function quickPickAdd(arg0?: unknown, arg1?: unknown) {
 export function activate(context: vscode.ExtensionContext) {
 	const channel = vscode.window.createOutputChannel('confignore');
 	context.subscriptions.push(channel);
-	log(LogLevel.INFO, 'Extension activated', channel);
+	channel.appendLine('[confignore] Activated');
 
 	let includeSupportEnabled = getIncludeSupportFlag();
 	setFeatureFlagContext(includeSupportEnabled).catch(err => {
-		log(LogLevel.ERROR, `setFeatureFlagContext error: ${String(err)}`, channel);
+		channel.appendLine('[confignore] setFeatureFlagContext error: ' + String(err));
 	});
 
 	// Initialize detection on activation
 	detectCapabilities().then(states => {
-		log(LogLevel.INFO, `Detected targets: ${JSON.stringify(states)}`, channel);
+		channel.appendLine('[confignore] Detected targets: ' + JSON.stringify(states));
 	}).catch(err => {
-		log(LogLevel.ERROR, `detectCapabilities error: ${String(err)}`, channel);
+		channel.appendLine('[confignore] detectCapabilities error: ' + String(err));
 	});
 
 	// Initialize context keys
 	clearContextKeys().catch(err => {
-		log(LogLevel.ERROR, `clearContextKeys error: ${String(err)}`, channel);
+		channel.appendLine('[confignore] clearContextKeys error: ' + String(err));
 	});
-
-	// First-run welcome message
-	const hasSeenWelcome = context.globalState.get<boolean>('confignore.hasSeenWelcome', false);
-	if (!hasSeenWelcome) {
-		vscode.window.showInformationMessage(
-			'Welcome to Confignore! Right-click any file in Explorer and choose "Add to Ignore" to get started.',
-			'Got it',
-			'Learn More'
-		).then(action => {
-			if (action === 'Learn More') {
-				vscode.env.openExternal(vscode.Uri.parse('https://github.com/pradeepmouli/confignore#readme'));
-			}
-		});
-		context.globalState.update('confignore.hasSeenWelcome', true);
-	}
 
 	// Subscribe to selection changes to update context keys
 	let lastSelection: vscode.Uri[] = [];
@@ -437,22 +279,9 @@ export function activate(context: vscode.ExtensionContext) {
 		}
 	};
 
-	// Debounced version for document changes
-	const debouncedUpdateSelection = debounce(updateSelection, 500);
-
-	// Only trigger debounced updates for relevant file changes
-	const relevantFiles = ['.gitignore', '.dockerignore', '.eslintignore', '.prettierignore', '.npmignore', '.stylelintignore', '.vscodeignore', 'tsconfig.json', '.eslintrc', '.prettierrc'];
-	const onDocumentChange = (e: vscode.TextDocumentChangeEvent) => {
-		const filename = path.basename(e.document.uri.fsPath);
-		const isRelevant = relevantFiles.some(f => filename.includes(f.replace(/\./g, '')));
-		if (isRelevant) {
-			debouncedUpdateSelection();
-		}
-	};
-
 	context.subscriptions.push(
 		vscode.window.onDidChangeActiveTextEditor(() => updateSelection()),
-		vscode.workspace.onDidChangeTextDocument(onDocumentChange)
+		vscode.workspace.onDidChangeTextDocument(() => updateSelection())
 	);
 
 	context.subscriptions.push(

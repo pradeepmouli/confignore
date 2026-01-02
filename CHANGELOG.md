@@ -7,27 +7,10 @@ Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how 
 ## [Unreleased]
 
 ### Added
-- Visual icon ($(exclude)) to "Add to Ignore" submenu for better discoverability
-- Quick pick enhancements: icons, detailed descriptions for each ignore file type
-- Enhanced status messages with "View File" action button to immediately view changes
-- First-run welcome message with "Learn More" link for new users
-- Duplicate pattern detection with intelligent normalization (treats `./temp/`, `temp`, `temp/` as duplicates)
-- User-friendly error messages with actionable information
-- Confirmation dialog for mixed-state selections (when some files are already ignored)
-- Structured logging with severity levels (INFO, SUCCESS, WARNING, ERROR) in output channel
-- Configuration settings:
-  - `confignore.defaultIgnoreFile`: Set preferred default ignore file
-  - `confignore.confirmMixedState`: Control confirmation dialogs (default: true)
-  - `confignore.checkDuplicates`: Enable duplicate detection (default: true)
-
-### Changed
-- Debounced state updates (500ms) for relevant file changes only, improving performance
-- Status messages now show duplicate skip count when patterns already exist
-- Error handling now provides context-specific, user-friendly messages
-
-### Fixed
-- Performance optimization: state updates now only trigger for relevant configuration file changes
-- Duplicate patterns are now properly detected across different formats
+- Feature flag for include/unignore support: `ignorer.features.includeSupport` (default: false)
+  - Allows users to opt-in to experimental include functionality
+  - Gated registration of include command and config-based removal operations
+  - Automatic window reload prompt when feature flag is toggled
 
 ## [0.0.3] - 2025-11-04
 
