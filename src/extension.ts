@@ -14,8 +14,8 @@ function debounce<T extends (...args: any[]) => any>(func: T, delay: number): (.
 		timeout = setTimeout(() => {
 			try {
 				const result = func(...args);
-				if (result && typeof (result as any).then === 'function' && typeof (result as any).catch === 'function') {
-					(result as Promise<unknown>).catch((error) => {
+				if (result instanceof Promise) {
+					result.catch((error) => {
 						const message = getFriendlyErrorMessage(error, 'An error occurred while running a debounced operation');
 						console.error(message);
 					});
@@ -471,12 +471,12 @@ export function activate(context: vscode.ExtensionContext) {
 	const debouncedUpdateSelection = debounce(updateSelection, 500);
 
 	// Only trigger debounced updates for relevant file changes
-	const relevantFiles = ['.gitignore', '.dockerignore', '.eslintignore', '.prettierignore', '.npmignore', '.stylelintignore', '.vscodeignore', 'tsconfig.json', '.eslintrc', '.prettierrc'];
+	const exactFiles = ['.gitignore', '.dockerignore', '.eslintignore', '.prettierignore', '.npmignore', '.stylelintignore', '.vscodeignore', 'tsconfig.json'];
+	const prefixFiles = ['.eslintrc', '.prettierrc'];
 	const onDocumentChange = (e: vscode.TextDocumentChangeEvent) => {
 		const filename = path.basename(e.document.uri.fsPath);
-		const isRelevant = relevantFiles.some(f =>
-			filename === f || filename.startsWith(`${f}.`)
-		);
+		const isRelevant = exactFiles.includes(filename) || 
+			prefixFiles.some(prefix => filename === prefix || filename.startsWith(`${prefix}.`));
 		if (isRelevant) {
 			debouncedUpdateSelection();
 		}
