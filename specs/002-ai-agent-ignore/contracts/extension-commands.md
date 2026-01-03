@@ -23,7 +23,7 @@ confignore.isIgnoredForAI(fileUri: Uri): Promise<boolean>
 - `fileUri` (Uri): Absolute file path to check
 
 **Returns**:
-- `Promise<boolean>`: 
+- `Promise<boolean>`:
   - `true` if file matches any AI ignore pattern
   - `false` if file is not ignored
 
@@ -58,7 +58,7 @@ async function isFileIncludedInAiContext(file: vscode.Uri): Promise<boolean> {
 ```typescript
 async function filterFilesForAiContext(files: vscode.Uri[]): Promise<vscode.Uri[]> {
   const included: vscode.Uri[] = [];
-  
+
   for (const file of files) {
     const ignored = await vscode.commands.executeCommand(
       'confignore.isIgnoredForAI',
@@ -68,7 +68,7 @@ async function filterFilesForAiContext(files: vscode.Uri[]): Promise<vscode.Uri[
       included.push(file);
     }
   }
-  
+
   return included;
 }
 ```
@@ -289,7 +289,7 @@ for (const file of files) {
 
 // DO this (1 cache load, 5 lookups):
 const ignored = await Promise.all(
-  files.map(file => 
+  files.map(file =>
     vscode.commands.executeCommand('confignore.isIgnoredForAI', file)
   )
 );
@@ -356,12 +356,12 @@ describe('confignore.isIgnoredForAI', () => {
     // First call: cache miss
     await vscode.commands.executeCommand('confignore.isIgnoredForAI', file1);
     const firstLatency = Date.now() - start;
-    
+
     // Second call: cache hit
     const start2 = Date.now();
     await vscode.commands.executeCommand('confignore.isIgnoredForAI', file2);
     const cachedLatency = Date.now() - start2;
-    
+
     expect(cachedLatency).toBeLessThan(firstLatency / 10);
   });
 });
@@ -374,16 +374,16 @@ describe('confignore.isIgnoredForAI integration', () => {
   it('respects workspace settings changes', async () => {
     // Set initial pattern
     vscode.workspace.getConfiguration().update('confignore.aiIgnore', ['*.env']);
-    
+
     let result = await vscode.commands.executeCommand(
       'confignore.isIgnoredForAI',
       testFile
     );
     expect(result).toBe(true);
-    
+
     // Change pattern
     vscode.workspace.getConfiguration().update('confignore.aiIgnore', []);
-    
+
     result = await vscode.commands.executeCommand(
       'confignore.isIgnoredForAI',
       testFile

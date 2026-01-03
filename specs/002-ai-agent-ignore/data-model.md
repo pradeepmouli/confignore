@@ -366,7 +366,7 @@ AiIgnoreConfig {
 
 **Memory**: Cache with ~1000 entries ≈ 100KB (small)
 
-**CPU**: 
+**CPU**:
 - Pattern matching per-file: ~0.1ms (gitignore library efficient)
 - With cache hit: <0.01ms
 - Config detection: ~10ms (file reads + parsing)

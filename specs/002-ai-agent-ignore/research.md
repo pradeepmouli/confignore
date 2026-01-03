@@ -35,7 +35,7 @@ Research existing AI agent configuration formats and ignore patterns to inform t
 | Codeium | `.codeiumignore` | Settings file | gitignore style | Root |
 | LLM-based tools | Varies | `.aiignore` (proposed standard) | Usually gitignore-compatible | Root |
 
-**Design Implication**: 
+**Design Implication**:
 - Support multiple formats (JSON config files + gitignore-style files)
 - Treat JSON-based configs as read-only detection (don't auto-create)
 - Standardize on gitignore glob syntax internally for consistency
@@ -57,7 +57,7 @@ Gitignore glob syntax covers all use cases:
 - ✅ No new pattern syntax needed; leverage existing infrastructure
 - ⚠️ Validation needed: Some glob patterns may be ambiguous (e.g., `*.` without extension)
 
-**Design Implication**: 
+**Design Implication**:
 - Reuse feature 001's pattern matching for consistency
 - Validate patterns at config parse time with clear error messages
 - Document glob syntax limitations (e.g., circular directory references)
@@ -188,7 +188,7 @@ VS Code settings:
 
 **Chosen**: Aggregate all sources, evaluate independently per source
 
-**Rationale**: 
+**Rationale**:
 - Users may have patterns in both workspace settings and agent-specific configs
 - Aggregating ensures comprehensive coverage
 - Independent evaluation prevents unexpected conflicts
@@ -256,7 +256,7 @@ return deduplicate(patterns)
 1. **Should we auto-create `.claude/settings.json` if user adds AI patterns via UI?**
    - Current plan: NO (matches feature 001 philosophy—don't auto-create configs)
    - Alternative: Create with user confirmation
-   
+
 2. **How to handle nested workspace folders in multi-root?**
    - Current plan: Each folder has independent config
    - Alternative: Root-level config applies to all folders
