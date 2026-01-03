@@ -51,8 +51,14 @@ Before starting a new task in the above plan, update progress in the plan.
 - Follow development best practices.
 
 ## Active Technologies
-- TypeScript (^5.9.x) targeting VS Code engine ^1.105.0 + VS Code extension API; esbuild bundling; ESLint for linting; TypeScript compiler for types (001-ignore-visibility-config)
-- Files in workspace (ignore files, config files); no external storage (001-ignore-visibility-config)
+- TypeScript 5.9+ (strict mode, ES2022 target); VS Code engine 1.105+; esbuild 0.25+ bundling
+- ESLint 9.39+ (@typescript-eslint 8.51+, flat config); oxfmt 0.21+; oxlint 1.36+ (supplementary linting)
+- pnpm package manager; @vscode/test-electron 2.5+ for testing
+- Files in workspace (ignore files, config files); no external storage
+- Feature 001 (ignore-visibility-config): Core ignore evaluation framework + UI patterns
+- Feature 002 (ai-agent-ignore): AI-specific ignore patterns (extends feature 001)
 
 ## Recent Changes
-- 001-ignore-visibility-config: Added TypeScript (^5.9.x) targeting VS Code engine ^1.105.0 + VS Code extension API; esbuild bundling; ESLint for linting; TypeScript compiler for types
+- Constitution 1.3.0: Expanded technology stack documentation (oxfmt, oxlint, pnpm, enhanced testing/tooling details)
+- 002-ai-agent-ignore: New feature extending ignore framework for AI agents
+- 001-ignore-visibility-config: Core ignore evaluation framework with multiple file type support

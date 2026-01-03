@@ -2,17 +2,17 @@
 
 <!--
 Sync Impact Report
-- Version change: 1.1.0 → 1.2.0
-- Modified principles: none
-- Added sections: Baseline workflow in Workflow Selection and Extension Workflows; Enhancement workflow in Workflow Selection and Extension Workflows; Review workflow in Extension Workflows; Cleanup workflow in Extension Workflows; Quality gates for Baseline and Enhancement workflows
+- Version change: 1.2.0 → 1.3.0
+- Modified principles: Constraints section (technology stack details updated)
+- Added sections: OXC Linting toolchain in Constraints; pnpm package manager specification
 - Removed sections: none
 - Templates requiring updates:
-	- ✅ .specify/templates/plan-template.md (Constitution Check gates aligned)
-	- ✅ .specify/templates/spec-template.md (no conflicts)
-	- ✅ .specify/templates/tasks-template.md (no conflicts)
-	- ✅ Extension workflow templates (bugfix, modify, refactor, hotfix, deprecate)
-	- 🔲 New workflow templates needed: baseline, enhancement, review, cleanup
-- Follow-up TODOs: Create templates for new workflows (baseline, enhancement, review, cleanup)
+	- ✅ .specify/templates/plan-template.md (no changes needed)
+	- ✅ .specify/templates/spec-template.md (no changes needed)
+	- ✅ .specify/templates/tasks-template.md (no changes needed)
+	- ✅ .specify/templates/commands/*.md (no changes needed)
+	- ✅ .github/copilot-instructions.md (Active Technologies section updated)
+- Follow-up TODOs: none
 -->
 
 ## Core Principles
@@ -49,13 +49,28 @@ diagnostics.
 
 ## Constraints
 
-- Language/Runtime: TypeScript, Node per VS Code engine; esbuild bundling.
-- Coding: ESLint rules enforced; formatting consistent with repo standards.
-- Security: No secrets in code; avoid unnecessary network calls; follow VS Code API
-  constraints; handle file I/O safely.
-- UX: Multi-root aware; do not clutter the UI; context menus must be relevant and
-  predictable; provide clear error messages.
-- Versioning: Semantic versioning for the extension and this constitution.
+- **Language/Runtime**: TypeScript 5.9+ (strict mode), ES2022 target, Node16+ module resolution, VS Code engine 1.105.0+; esbuild 0.25+ for bundling
+- **Tooling**:
+  - **Linting**: ESLint 9.39+ with @typescript-eslint (8.51+) using flat config format
+  - **Formatting**: oxfmt 0.21+ for multi-language formatting (TS, JSON, TOML, etc.)
+  - **Advanced Linting**: oxlint 1.36+ as supplementary linter for additional rule coverage beyond ESLint
+  - **Package Manager**: pnpm for dependency management (lock file: pnpm-lock.yaml)
+  - **Testing**: @vscode/test-electron 2.5+ for VS Code extension testing; @vscode/test-cli 0.0+ for CLI test execution; mocha 10+ test framework
+  - **Type Checking**: TypeScript 5.9+ compiler (tsc --noEmit for CI validation)
+- **Coding Standards**:
+  - ESLint rules enforced; formatting via oxfmt + oxlint consistency checks
+  - No warnings for new/changed code without explicit documented exceptions
+  - Type Safety: TypeScript strict mode MUST be maintained; minimal type errors allowed only with // @ts-expect-error comments with justification
+- **Security**:
+  - No secrets in code; avoid unnecessary network calls; follow VS Code API constraints
+  - Handle file I/O safely with proper error boundaries
+  - Validate user-provided glob patterns and file paths
+- **UX**:
+  - Multi-root aware; do not clutter the UI; context menus must be relevant and predictable
+  - Provide clear error messages via OutputChannel with appropriate log levels (info/warning/error)
+  - File decorations and badges must follow VS Code convention patterns
+- **Versioning**: Semantic versioning for the extension (MAJOR.MINOR.PATCH) and this constitution (same scheme)
+- **Distribution**: VS Code extension packaged via @vscode/vsce 3.7+; published to VS Code Marketplace
 
 ## Development Workflow & Quality Gates
 
@@ -167,4 +182,4 @@ Versioning policy: MAJOR for incompatible governance changes; MINOR for added or
 materially expanded sections; PATCH for clarifications. Compliance is reviewed in
 every PR via “Constitution Check” in plans.
 
-**Version**: 1.2.0 | **Ratified**: 2025-11-04 | **Last Amended**: 2025-12-27
+**Version**: 1.3.0 | **Ratified**: 2025-11-04 | **Last Amended**: 2026-01-03
