@@ -19,7 +19,7 @@
 
 **Purpose**: Extend existing codebase to support AI agent ignore types
 
-- [ ] T001 [P] Extend Source enum in src/models/types.ts to add AI ignore source types (WorkspaceSettingsAiAgent, IgnoreFileAiAgent, AgentConfigClaude, AgentConfigCopilot, AgentConfigCursor, AgentConfigCodeium)
+- [ ] T001 [P] Extend Source enum in src/models/types.ts to add AI ignore source types (WorkspaceSettingsAiAgent, IgnoreFileAiAgent, AgentConfigClaude, AgentConfigCopilot, AgentConfigCodex, AgentConfigGemini, AgentConfigCursor, AgentConfigCodeium)
 - [ ] T002 [P] Extend EffectiveState interface in src/models/types.ts to add AI ignore fields (aiIgnored, aiIgnoreSource, aiIgnoreReasons)
 - [ ] T003 [P] Define AiIgnorePattern type in src/models/types.ts
 - [ ] T004 [P] Define AiIgnoreConfig interface in src/models/types.ts with workspaceUri, patterns, sources, lastUpdated, isValid fields
@@ -60,15 +60,19 @@
 - [ ] T017 [P] [US1] Implement Copilot config detector in src/services/agentConfigDetector.ts to find and parse .copilotignore gitignore-style file
 - [ ] T018 [P] [US1] Implement Cursor config detector in src/services/agentConfigDetector.ts to find and parse .cursorignore gitignore-style file
 - [ ] T019 [P] [US1] Implement Codeium config detector in src/services/agentConfigDetector.ts to find and parse .codeiumignore gitignore-style file
-- [ ] T020 [US1] Implement pattern aggregation logic in src/services/agentConfigDetector.ts to combine patterns from all detected sources with deduplication
-- [ ] T021 [US1] Implement error handling for agent config parsing in src/services/agentConfigDetector.ts with graceful degradation for malformed JSON, missing fields, file permission errors
-- [ ] T022 [US1] Implement config validation in src/services/aiIgnoreResolver.ts to validate each pattern for glob syntax and log warnings for invalid patterns
-- [ ] T023 [US1] Wire up AiIgnoreResolver to load config from workspace settings and agentConfigDetector in src/services/aiIgnoreResolver.ts constructor
-- [ ] T024 [US1] Register onDidChangeConfiguration listener in src/extension.ts to invalidate cache when workspace settings change
-- [ ] T025 [US1] Register FileSystemWatcher for .claude/settings.json in src/extension.ts to invalidate cache when agent config files change
-- [ ] T026 [US1] Register FileSystemWatcher for .copilotignore in src/extension.ts to invalidate cache when agent config files change
-- [ ] T027 [US1] Register FileSystemWatcher for .cursorignore in src/extension.ts to invalidate cache when agent config files change
-- [ ] T028 [US1] Register FileSystemWatcher for .codeiumignore in src/extension.ts to invalidate cache when agent config files change
+- [ ] T020 [P] [US1] Implement Gemini config detector in src/services/agentConfigDetector.ts to find and parse .geminiignore gitignore-style file
+- [ ] T021 [P] [US1] Implement Codex config detector in src/services/agentConfigDetector.ts to find and parse .codexignore gitignore-style file (or reuse Copilot config)
+- [ ] T022 [US1] Implement pattern aggregation logic in src/services/agentConfigDetector.ts to combine patterns from all detected sources with deduplication
+- [ ] T023 [US1] Implement error handling for agent config parsing in src/services/agentConfigDetector.ts with graceful degradation for malformed JSON, missing fields, file permission errors
+- [ ] T024 [US1] Implement config validation in src/services/aiIgnoreResolver.ts to validate each pattern for glob syntax and log warnings for invalid patterns
+- [ ] T025 [US1] Wire up AiIgnoreResolver to load config from workspace settings and agentConfigDetector in src/services/aiIgnoreResolver.ts constructor
+- [ ] T026 [US1] Register onDidChangeConfiguration listener in src/extension.ts to invalidate cache when workspace settings change
+- [ ] T027 [US1] Register FileSystemWatcher for .claude/settings.json in src/extension.ts to invalidate cache when agent config files change
+- [ ] T028 [US1] Register FileSystemWatcher for .copilotignore in src/extension.ts to invalidate cache when agent config files change
+- [ ] T029 [US1] Register FileSystemWatcher for .geminiignore in src/extension.ts to invalidate cache when agent config files change
+- [ ] T030 [US1] Register FileSystemWatcher for .codexignore in src/extension.ts to invalidate cache when agent config files change
+- [ ] T031 [US1] Register FileSystemWatcher for .cursorignore in src/extension.ts to invalidate cache when agent config files change
+- [ ] T032 [US1] Register FileSystemWatcher for .codeiumignore in src/extension.ts to invalidate cache when agent config files change
 
 **Checkpoint**: At this point, User Story 1 should be fully functional - AI patterns are configured and detected from multiple sources
 
@@ -82,20 +86,20 @@
 
 ### Implementation for User Story 2
 
-- [ ] T029 [P] [US2] Implement pattern matching logic in src/services/aiIgnoreResolver.ts using existing glob matching from feature 001 (reuse lib/patterns.ts utilities)
-- [ ] T030 [P] [US2] Implement cache lookup in src/services/aiIgnoreResolver.ts isIgnored method to check cache before evaluating patterns
-- [ ] T031 [P] [US2] Implement pattern evaluation in src/services/aiIgnoreResolver.ts isIgnored method to match file URI against all AI ignore patterns
-- [ ] T032 [P] [US2] Implement cache write in src/services/aiIgnoreResolver.ts isIgnored method to store evaluation results in cache
-- [ ] T033 [US2] Extend stateResolver.ts to call aiIgnoreResolver.isIgnored and populate EffectiveState aiIgnored fields in src/services/stateResolver.ts
-- [ ] T034 [US2] Extend contextKeys.ts to register confignore.aiIgnoredFile context key in src/services/contextKeys.ts
-- [ ] T035 [US2] Extend contextKeys.ts to register confignore.aiIgnoreConfigured context key in src/services/contextKeys.ts
-- [ ] T036 [US2] Update contextKeys.ts to set confignore.aiIgnoredFile based on currently selected file's AI ignore status in src/services/contextKeys.ts
-- [ ] T037 [US2] Update contextKeys.ts to set confignore.aiIgnoreConfigured based on whether any AI patterns exist in src/services/contextKeys.ts
-- [ ] T038 [US2] Register file decoration provider in src/extension.ts for AI ignored files with badge overlay icon
-- [ ] T039 [US2] Implement decoration provider logic to apply badge to files where aiIgnored is true in src/extension.ts
-- [ ] T040 [US2] Add tooltip text to badge decorations showing "Ignored for AI agents" in src/extension.ts
-- [ ] T041 [US2] Handle decoration updates on file tree render with <100ms latency target in src/extension.ts
-- [ ] T042 [US2] Handle decoration updates when AI ignore config changes in src/extension.ts by listening to cache invalidation events
+- [ ] T033 [P] [US2] Implement pattern matching logic in src/services/aiIgnoreResolver.ts using existing glob matching from feature 001 (reuse lib/patterns.ts utilities)
+- [ ] T034 [P] [US2] Implement cache lookup in src/services/aiIgnoreResolver.ts isIgnored method to check cache before evaluating patterns
+- [ ] T035 [P] [US2] Implement pattern evaluation in src/services/aiIgnoreResolver.ts isIgnored method to match file URI against all AI ignore patterns
+- [ ] T036 [P] [US2] Implement cache write in src/services/aiIgnoreResolver.ts isIgnored method to store evaluation results in cache
+- [ ] T037 [US2] Extend stateResolver.ts to call aiIgnoreResolver.isIgnored and populate EffectiveState aiIgnored fields in src/services/stateResolver.ts
+- [ ] T038 [US2] Extend contextKeys.ts to register confignore.aiIgnoredFile context key in src/services/contextKeys.ts
+- [ ] T039 [US2] Extend contextKeys.ts to register confignore.aiIgnoreConfigured context key in src/services/contextKeys.ts
+- [ ] T040 [US2] Update contextKeys.ts to set confignore.aiIgnoredFile based on currently selected file's AI ignore status in src/services/contextKeys.ts
+- [ ] T041 [US2] Update contextKeys.ts to set confignore.aiIgnoreConfigured based on whether any AI patterns exist in src/services/contextKeys.ts
+- [ ] T042 [US2] Register file decoration provider in src/extension.ts for AI ignored files with badge overlay icon
+- [ ] T043 [US2] Implement decoration provider logic to apply badge to files where aiIgnored is true in src/extension.ts
+- [ ] T044 [US2] Add tooltip text to badge decorations showing "Ignored for AI agents" in src/extension.ts
+- [ ] T045 [US2] Handle decoration updates on file tree render with <100ms latency target in src/extension.ts
+- [ ] T046 [US2] Handle decoration updates when AI ignore config changes in src/extension.ts by listening to cache invalidation events
 
 **Checkpoint**: At this point, User Stories 1 AND 2 should both work independently - patterns configured, files decorated with badges
 
@@ -109,19 +113,19 @@
 
 ### Implementation for User Story 3
 
-- [ ] T043 [P] [US3] Implement confignore.isIgnoredForAI command handler in src/extension.ts that accepts Uri parameter and returns Promise<boolean>
-- [ ] T044 [P] [US3] Implement confignore.openAiIgnoreSettings command handler in src/extension.ts to open .vscode/settings.json and position cursor at confignore.aiIgnore
-- [ ] T045 [P] [US3] Implement confignore.reloadAiIgnoreConfig command handler in src/extension.ts to manually trigger config reload and cache invalidation
-- [ ] T046 [P] [US3] Implement confignore.showAiIgnoreStatus command handler in src/extension.ts to display information message with file's AI ignore status
-- [ ] T047 [US3] Register confignore.isIgnoredForAI command in package.json commands section with title "Check if file is ignored for AI"
-- [ ] T048 [US3] Register confignore.openAiIgnoreSettings command in package.json commands section with title "Open AI Ignore Settings"
-- [ ] T049 [US3] Register confignore.reloadAiIgnoreConfig command in package.json commands section with title "Reload AI Ignore Configuration"
-- [ ] T050 [US3] Register confignore.showAiIgnoreStatus command in package.json commands section with title "Show AI Ignore Status"
-- [ ] T051 [US3] Add error handling to confignore.isIgnoredForAI for invalid file URI with graceful degradation returning false
-- [ ] T052 [US3] Add error handling to confignore.isIgnoredForAI for workspace not open with graceful degradation returning false
-- [ ] T053 [US3] Optimize confignore.isIgnoredForAI to use cache for <50ms query performance even with 1000+ patterns
-- [ ] T054 [US3] Add confignore.aiIgnoredFile context key to package.json when clause for menu visibility
-- [ ] T055 [US3] Add confignore.aiIgnoreConfigured context key to package.json when clause for command palette visibility
+- [ ] T047 [P] [US3] Implement confignore.isIgnoredForAI command handler in src/extension.ts that accepts Uri parameter and returns Promise<boolean>
+- [ ] T048 [P] [US3] Implement confignore.openAiIgnoreSettings command handler in src/extension.ts to open .vscode/settings.json and position cursor at confignore.aiIgnore
+- [ ] T049 [P] [US3] Implement confignore.reloadAiIgnoreConfig command handler in src/extension.ts to manually trigger config reload and cache invalidation
+- [ ] T050 [P] [US3] Implement confignore.showAiIgnoreStatus command handler in src/extension.ts to display information message with file's AI ignore status
+- [ ] T051 [US3] Register confignore.isIgnoredForAI command in package.json commands section with title "Check if file is ignored for AI"
+- [ ] T052 [US3] Register confignore.openAiIgnoreSettings command in package.json commands section with title "Open AI Ignore Settings"
+- [ ] T053 [US3] Register confignore.reloadAiIgnoreConfig command in package.json commands section with title "Reload AI Ignore Configuration"
+- [ ] T054 [US3] Register confignore.showAiIgnoreStatus command in package.json commands section with title "Show AI Ignore Status"
+- [ ] T055 [US3] Add error handling to confignore.isIgnoredForAI for invalid file URI with graceful degradation returning false
+- [ ] T056 [US3] Add error handling to confignore.isIgnoredForAI for workspace not open with graceful degradation returning false
+- [ ] T057 [US3] Optimize confignore.isIgnoredForAI to use cache for <50ms query performance even with 1000+ patterns
+- [ ] T058 [US3] Add confignore.aiIgnoredFile context key to package.json when clause for menu visibility
+- [ ] T059 [US3] Add confignore.aiIgnoreConfigured context key to package.json when clause for command palette visibility
 
 **Checkpoint**: All user stories should now be independently functional - configure, display, and query AI ignore status
 
@@ -131,17 +135,17 @@
 
 **Purpose**: Improvements that affect multiple user stories
 
-- [ ] T056 [P] Add comprehensive JSDoc documentation to all public methods in src/services/aiIgnoreResolver.ts
-- [ ] T057 [P] Add comprehensive JSDoc documentation to all public methods in src/services/agentConfigDetector.ts
-- [ ] T058 [P] Update package.json with feature 002 activation events (onStartupFinished, onWorkspaceContains:.vscode/settings.json)
-- [ ] T059 [P] Update package.json configuration schema to include confignore.aiIgnore setting with array type and description
-- [ ] T060 [P] Update README.md to document AI agent ignore feature with configuration examples
-- [ ] T061 [P] Update CHANGELOG.md to add feature 002 release notes
-- [ ] T062 Run typecheck (tsc --noEmit) to ensure no TypeScript errors
-- [ ] T063 Run linting (oxlint, ESLint) to ensure no new warnings
-- [ ] T064 Run formatter (oxfmt) to ensure consistent code style
-- [ ] T065 Build extension (esbuild) to verify production build succeeds
-- [ ] T066 Manual integration test following specs/002-ai-agent-ignore/quickstart.md scenarios to validate end-to-end workflows
+- [ ] T060 [P] Add comprehensive JSDoc documentation to all public methods in src/services/aiIgnoreResolver.ts
+- [ ] T061 [P] Add comprehensive JSDoc documentation to all public methods in src/services/agentConfigDetector.ts
+- [ ] T062 [P] Update package.json with feature 002 activation events (onStartupFinished, onWorkspaceContains:.vscode/settings.json)
+- [ ] T063 [P] Update package.json configuration schema to include confignore.aiIgnore setting with array type and description
+- [ ] T064 [P] Update README.md to document AI agent ignore feature with configuration examples
+- [ ] T065 [P] Update CHANGELOG.md to add feature 002 release notes
+- [ ] T066 Run typecheck (tsc --noEmit) to ensure no TypeScript errors
+- [ ] T067 Run linting (oxlint, ESLint) to ensure no new warnings
+- [ ] T068 Run formatter (oxfmt) to ensure consistent code style
+- [ ] T069 Build extension (esbuild) to verify production build succeeds
+- [ ] T070 Manual integration test following specs/002-ai-agent-ignore/quickstart.md scenarios to validate end-to-end workflows
 
 ---
 
@@ -186,13 +190,13 @@
 ### Parallel Opportunities
 
 - **Phase 1 (Setup)**: All type definitions (T001-T009) can run in parallel
-- **Phase 3 (US1)**: All config detectors (T015-T019) can run in parallel
-- **Phase 3 (US1)**: All FileSystemWatchers (T025-T028) can run in parallel
-- **Phase 4 (US2)**: Pattern matching tasks (T029-T032) can run in parallel
-- **Phase 4 (US2)**: Context key registrations (T034-T037) can run in parallel
-- **Phase 5 (US3)**: All command handlers (T043-T046) can run in parallel
-- **Phase 5 (US3)**: All package.json registrations (T047-T055) can run in parallel
-- **Phase 6 (Polish)**: Documentation tasks (T056-T061) can run in parallel
+- **Phase 3 (US1)**: All config detectors (T016-T021) can run in parallel
+- **Phase 3 (US1)**: All FileSystemWatchers (T027-T032) can run in parallel
+- **Phase 4 (US2)**: Pattern matching tasks (T033-T036) can run in parallel
+- **Phase 4 (US2)**: Context key registrations (T038-T041) can run in parallel
+- **Phase 5 (US3)**: All command handlers (T047-T050) can run in parallel
+- **Phase 5 (US3)**: All package.json registrations (T051-T059) can run in parallel
+- **Phase 6 (Polish)**: Documentation tasks (T060-T065) can run in parallel
 - **Across User Stories**: Once foundational phase completes, US1, US2, and US3 can be developed in parallel by different team members
 
 ---
@@ -205,10 +209,16 @@ Task T016: "Implement Claude config detector in src/services/agentConfigDetector
 Task T017: "Implement Copilot config detector in src/services/agentConfigDetector.ts"
 Task T018: "Implement Cursor config detector in src/services/agentConfigDetector.ts"
 Task T019: "Implement Codeium config detector in src/services/agentConfigDetector.ts"
+Task T020: "Implement Gemini config detector in src/services/agentConfigDetector.ts"
+Task T021: "Implement Codex config detector in src/services/agentConfigDetector.ts"
 
 # Launch all FileSystemWatchers together:
-Task T025: "Register FileSystemWatcher for .claude/settings.json"
-Task T026: "Register FileSystemWatcher for .copilotignore"
+Task T027: "Register FileSystemWatcher for .claude/settings.json"
+Task T028: "Register FileSystemWatcher for .copilotignore"
+Task T029: "Register FileSystemWatcher for .geminiignore"
+Task T030: "Register FileSystemWatcher for .codexignore"
+Task T031: "Register FileSystemWatcher for .cursorignore"
+Task T032: "Register FileSystemWatcher for .codeiumignore"
 Task T027: "Register FileSystemWatcher for .cursorignore"
 Task T028: "Register FileSystemWatcher for .codeiumignore"
 ```

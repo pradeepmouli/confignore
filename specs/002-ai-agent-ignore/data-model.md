@@ -57,7 +57,7 @@ interface AiIgnoreConfig {
 }
 
 interface AiIgnoreSource {
-  source: 'workspace:settings' | 'agent:.claude/settings.json' | 'agent:.copilotignore' | 'agent:custom';
+  source: 'workspace:settings' | 'agent:.claude/settings.json' | 'agent:.copilotignore' | 'agent:.geminiignore' | 'agent:.codexignore' | 'agent:custom';
   patterns: AiIgnorePattern[];
   filePath?: string;         // path to agent config file
   errors?: string[];         // parsing errors for this source
@@ -143,7 +143,7 @@ interface AgentConfigDetectionResult {
 }
 
 interface AgentConfigFile {
-  agentName: 'claude' | 'copilot' | 'cursor' | 'codeium' | 'custom';
+  agentName: 'claude' | 'copilot' | 'codex' | 'gemini' | 'cursor' | 'codeium' | 'custom';
   configPath: string;         // relative to workspace root
   patterns: AiIgnorePattern[];
   format: 'json' | 'gitignore-style';
@@ -185,6 +185,8 @@ export enum Source {
   IgnoreFileAiAgent = 'ignore:.aiignore',
   AgentConfigClaude = 'agent:.claude/settings.json',
   AgentConfigCopilot = 'agent:.copilotignore',
+  AgentConfigCodex = 'agent:.codexignore',
+  AgentConfigGemini = 'agent:.geminiignore',
   AgentConfigCursor = 'agent:.cursorignore',
   AgentConfigCodeium = 'agent:.codeiumignore'
 }
@@ -239,7 +241,7 @@ interface AiIgnoreCache {
 
 **Triggers** (via event listeners):
 1. **Workspace Settings Change**: `onDidChangeConfiguration` → invalidate all entries
-2. **Agent Config File Save**: FileSystemWatcher on `.claude/settings.json`, `.copilotignore`, etc. → invalidate related entries
+2. **Agent Config File Save**: FileSystemWatcher on `.claude/settings.json`, `.copilotignore`, `.geminiignore`, `.codexignore`, etc. → invalidate related entries
 3. **Manual Clear**: User command `confignore.clearAiIgnoreCache` → clear all entries
 4. **TTL Expiration**: Old entries pruned (configurable, default 1 hour)
 
@@ -271,6 +273,8 @@ Workspace Settings (confignore.aiIgnore)
 │  Finds & reads:         │
 │  - .claude/settings.json│
 │  - .copilotignore       │
+│  - .geminiignore        │
+│  - .codexignore         │
 │  - .cursorignore        │
 │  - etc.                 │
 └────────────┬────────────┘
@@ -332,6 +336,7 @@ Workspace Settings (confignore.aiIgnore)
 **Workspace Setup**:
 - `.vscode/settings.json`: `confignore.aiIgnore: ["node_modules/**", "*.env"]`
 - `.claude/settings.json`: `ignore: ["secrets/", "api_keys.json"]`
+- `.geminiignore`: Contains `build/` and `dist/`
 - `.copilotignore`: Doesn't exist
 
 **Detected Config**:
@@ -342,11 +347,14 @@ AiIgnoreConfig {
     'node_modules/**',
     '*.env',
     'secrets/',
-    'api_keys.json'
+    'api_keys.json',
+    'build/',
+    'dist/'
   ],
   sources: [
     { source: 'workspace:settings', patterns: ['node_modules/**', '*.env'], filePath: '.vscode/settings.json' },
-    { source: 'agent:.claude/settings.json', patterns: ['secrets/', 'api_keys.json'], filePath: '.claude/settings.json' }
+    { source: 'agent:.claude/settings.json', patterns: ['secrets/', 'api_keys.json'], filePath: '.claude/settings.json' },
+    { source: 'agent:.geminiignore', patterns: ['build/', 'dist/'], filePath: '.geminiignore' }
   ],
   lastUpdated: 2026-01-03T10:00:00Z,
   isValid: true

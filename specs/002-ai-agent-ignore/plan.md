@@ -8,7 +8,7 @@
 ## Summary
 
 Extend the existing ignore configuration system (feature 001-ignore-visibility-config) to support AI agent-specific ignore patterns. This feature adds:
-- **AI Ignore Type**: New ignore pattern source for AI agents, stored in workspace settings and detected from agent-specific config files (`.claude/settings.json`, GitHub Copilot settings, etc.)
+- **AI Ignore Type**: New ignore pattern source for AI agents, stored in workspace settings and detected from agent-specific config files (`.claude/settings.json`, GitHub Copilot settings, Gemini settings, etc.)
 - **Pattern Evaluation**: Reuse existing glob matching infrastructure from feature 001, adding independent `aiIgnore` evaluation path (not coupled to gitignore)
 - **UI Integration**: Badge overlay decorations on file explorer items matching AI ignore patterns
 - **Public Command API**: VS Code command `confignore.isIgnoredForAI` for other extensions to query AI ignore status
@@ -17,7 +17,7 @@ Extend the existing ignore configuration system (feature 001-ignore-visibility-c
 High-level approach:
 - Extend `Source` enum in types to include `IgnoreFileAiAgent` and `WorkspaceSettingsAiAgent`
 - Add `AiIgnoreResolver` service to evaluate AI agent patterns independently from gitignore
-- Implement agent-specific config file discovery and parsing (`.claude/settings.json`, etc.)
+- Implement agent-specific config file discovery and parsing (`.claude/settings.json`, `.geminiignore`, etc.)
 - Register file decorations and context keys for AI-ignored files
 - Expose command `confignore.isIgnoredForAI` for external extension queries
 - Add caching layer to handle performance with large pattern sets

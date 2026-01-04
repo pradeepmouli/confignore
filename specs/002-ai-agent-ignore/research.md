@@ -18,6 +18,8 @@ Research existing AI agent configuration formats and ignore patterns to inform t
 **Answer**: Primary targets identified in clarification:
 - **Claude** (Anthropic): Uses `.claude/settings.json` or `claude.json` in workspace
 - **GitHub Copilot**: Configurable via VS Code settings and `.copilotignore` file
+- **GitHub Codex**: Shares configuration with GitHub Copilot (`.copilotignore` or Copilot settings)
+- **Google Gemini**: Uses `.geminiignore` gitignore-style file or Gemini-specific settings
 - **ChatGPT** (OpenAI): Context via API or VS Code extension; respects `.openaiignore` if standard established
 - **Other LLM integrations**: Cursor IDE uses `.cursorignore`, Codeium uses similar patterns
 
@@ -31,6 +33,8 @@ Research existing AI agent configuration formats and ignore patterns to inform t
 |-------|-----------------|-------------------|-----------------|------------------|
 | Claude | `.claude/settings.json` | `claude.json` | JSON with `ignore` array | Root or `.claude/` |
 | GitHub Copilot | VS Code settings + `.copilotignore` | Environment variables | gitignore style OR JSON | Workspace settings / root |
+| GitHub Codex | `.copilotignore` (shared with Copilot) | VS Code settings | gitignore style | Root |
+| Google Gemini | `.geminiignore` | Gemini settings file | gitignore style | Root |
 | Cursor | `.cursorignore` | `cursor.json` | gitignore style | Root |
 | Codeium | `.codeiumignore` | Settings file | gitignore style | Root |
 | LLM-based tools | Varies | `.aiignore` (proposed standard) | Usually gitignore-compatible | Root |
@@ -39,7 +43,8 @@ Research existing AI agent configuration formats and ignore patterns to inform t
 - Support multiple formats (JSON config files + gitignore-style files)
 - Treat JSON-based configs as read-only detection (don't auto-create)
 - Standardize on gitignore glob syntax internally for consistency
-- Phase 1 focus: `.claude/settings.json` + workspace settings; extend to other formats in Phase 2
+- Phase 1 focus: `.claude/settings.json`, `.geminiignore` + workspace settings; extend to other formats in Phase 2
+- Note: Codex shares Copilot's configuration, simplifying implementation
 
 ### Q3: Is gitignore pattern syntax compatible with AI ignore requirements?
 
