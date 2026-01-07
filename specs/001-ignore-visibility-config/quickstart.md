@@ -15,6 +15,7 @@
 7. Use "tsconfig ..." exclude to update `tsconfig.json` (only if present). Use "Include" to remove exclusions.
 
 ## Notes
+
 - Precedence: config-based excludes > project ignore files > workspace settings.
 - Missing config files: actions are hidden/not offered (no auto-create).
 - Multi-root: behavior scoped to the selection’s workspace folder.

@@ -67,6 +67,7 @@ This extension contributes the following settings:
 ### 0.0.4 (Upcoming)
 
 **UX Improvements:**
+
 - Added visual icon to "Add to Ignore" submenu for better discoverability
 - Improved quick pick dialog with descriptive icons and detailed descriptions
 - Enhanced status messages with "View File" action button
@@ -78,6 +79,7 @@ This extension contributes the following settings:
 - Structured logging with severity levels in output channel
 
 **New Settings:**
+
 - `confignore.defaultIgnoreFile`: Set default ignore file for quick add
 - `confignore.confirmMixedState`: Control mixed-state confirmation dialogs
 - `confignore.checkDuplicates`: Enable/disable duplicate pattern detection

@@ -7,6 +7,7 @@ Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how 
 ## [Unreleased]
 
 ### Added
+
 - Visual icon ($(exclude)) to "Add to Ignore" submenu for better discoverability
 - Quick pick enhancements: icons, detailed descriptions for each ignore file type
 - Enhanced status messages with "View File" action button to immediately view changes
@@ -21,17 +22,20 @@ Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how 
   - `confignore.checkDuplicates`: Enable duplicate detection (default: true)
 
 ### Changed
+
 - Debounced state updates (500ms) for relevant file changes only, improving performance
 - Status messages now show duplicate skip count when patterns already exist
 - Error handling now provides context-specific, user-friendly messages
 
 ### Fixed
+
 - Performance optimization: state updates now only trigger for relevant configuration file changes
 - Duplicate patterns are now properly detected across different formats
 
 ## [0.0.3] - 2025-11-04
 
 ### Added
+
 - Smart menu visibility based on effective exclusion state
   - Hides "Ignore" actions when selection is already excluded
   - Shows "Include" action when selection is excluded
@@ -47,16 +51,19 @@ Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how 
 - Enhanced pattern matching for nested paths and glob patterns with `**`
 
 ### Changed
+
 - Menu structure updated to conditionally show actions based on selection state
 - Multi-selection handling improved to detect mixed states
 
 ### Fixed
+
 - Pattern matching now properly handles `**` glob patterns for nested directories
 - Multi-selection aggregates sources correctly across all selected items
 
 ## [0.0.2]
 
 ### Added
+
 - Explorer submenu for ignore targets
 - Quick Pick command for selecting ignore files
 - Multi-root workspace support
@@ -64,4 +71,5 @@ Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how 
 ## [0.0.1]
 
 ### Added
+
 - Initial release with basic ignore file support

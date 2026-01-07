@@ -23,6 +23,7 @@ type AiIgnorePattern = string;
 ```
 
 **Characteristics**:
+
 - Inherits gitignore glob syntax (see research.md Q3)
 - Can be positive (exclude) or negative (include exception)
 - Case-sensitive on Unix-like systems, case-insensitive on Windows
@@ -30,6 +31,7 @@ type AiIgnorePattern = string;
 - No circular references allowed
 
 **Validation**:
+
 ```typescript
 interface PatternValidation {
   valid: boolean;
@@ -57,7 +59,7 @@ interface AiIgnoreConfig {
 }
 
 interface AiIgnoreSource {
-  source: 'workspace:settings' | 'agent:.claude/settings.json' | 'agent:.copilotignore' | 'agent:custom';
+  source: 'workspace:settings' | 'agent:.claude/settings.json' | 'agent:.aiexclude' | 'agent:custom';
   patterns: AiIgnorePattern[];
   filePath?: string;         // path to agent config file
   errors?: string[];         // parsing errors for this source
@@ -65,12 +67,14 @@ interface AiIgnoreSource {
 ```
 
 **Responsibilities**:
+
 - Store patterns from all detected sources
 - Track provenance (which source contributed which patterns)
 - Maintain validation state
 - Support cache invalidation on source changes
 
 **Example**:
+
 ```typescript
 {
   workspaceUri: Uri { fsPath: '/user/project' },
@@ -78,7 +82,7 @@ interface AiIgnoreSource {
     'node_modules/**',
     '*.env',
     'secrets/',
-    '.claude/settings.json' // from .claude/settings.json
+    'config/credentials.json'
   ],
   sources: [
     {
@@ -88,7 +92,7 @@ interface AiIgnoreSource {
     },
     {
       source: 'agent:.claude/settings.json',
-      patterns: ['secrets/', '.claude/settings.json'],
+      patterns: ['secrets/', 'config/credentials.json'],
       filePath: '.claude/settings.json'
     }
   ],
@@ -117,6 +121,7 @@ interface AiIgnoreStatus {
 **Usage**: Returned by `aiIgnoreResolver.isIgnored(uri)` and `confignore.isIgnoredForAI` command
 
 **Example**:
+
 ```typescript
 {
   uri: Uri { fsPath: '/project/node_modules/lib.js' },
@@ -143,7 +148,7 @@ interface AgentConfigDetectionResult {
 }
 
 interface AgentConfigFile {
-  agentName: 'claude' | 'copilot' | 'cursor' | 'codeium' | 'custom';
+  agentName: 'claude' | 'gemini' | 'cursor' | 'codeium' | 'custom';
   configPath: string;         // relative to workspace root
   patterns: AiIgnorePattern[];
   format: 'json' | 'gitignore-style';
@@ -182,9 +187,8 @@ export enum Source {
 
   // NEW: AI agent ignore types
   WorkspaceSettingsAiAgent = 'workspace:aiIgnore',
-  IgnoreFileAiAgent = 'ignore:.aiignore',
   AgentConfigClaude = 'agent:.claude/settings.json',
-  AgentConfigCopilot = 'agent:.copilotignore',
+  AgentConfigGemini = 'agent:.aiexclude',
   AgentConfigCursor = 'agent:.cursorignore',
   AgentConfigCodeium = 'agent:.codeiumignore'
 }
@@ -238,12 +242,14 @@ interface AiIgnoreCache {
 ### Cache Invalidation Strategy
 
 **Triggers** (via event listeners):
+
 1. **Workspace Settings Change**: `onDidChangeConfiguration` → invalidate all entries
-2. **Agent Config File Save**: FileSystemWatcher on `.claude/settings.json`, `.copilotignore`, etc. → invalidate related entries
+2. **Agent Config File Save**: FileSystemWatcher on `.claude/settings.json`, `.aiexclude`, etc. → invalidate related entries
 3. **Manual Clear**: User command `confignore.clearAiIgnoreCache` → clear all entries
 4. **TTL Expiration**: Old entries pruned (configurable, default 1 hour)
 
 **Algorithm**:
+
 ```typescript
 function invalidateCache(reason: 'settings' | 'file' | 'manual' | 'ttl'): void {
   if (reason === 'settings' || reason === 'manual') {
@@ -270,7 +276,7 @@ Workspace Settings (confignore.aiIgnore)
 ├─────────────────────────┤
 │  Finds & reads:         │
 │  - .claude/settings.json│
-│  - .copilotignore       │
+│  - .aiexclude           │
 │  - .cursorignore        │
 │  - etc.                 │
 └────────────┬────────────┘
@@ -309,32 +315,34 @@ Workspace Settings (confignore.aiIgnore)
 
 ### Pattern Validation
 
-| Rule | Check | Action if Invalid |
-|------|-------|-------------------|
-| Non-empty | Pattern length > 0 | Skip pattern, log warning |
-| Valid glob | No unbalanced brackets, valid escapes | Log warning, skip pattern |
+| Rule        | Check                                                      | Action if Invalid               |
+| ----------- | ---------------------------------------------------------- | ------------------------------- |
+| Non-empty   | Pattern length > 0                                         | Skip pattern, log warning       |
+| Valid glob  | No unbalanced brackets, valid escapes                      | Log warning, skip pattern       |
 | No reserved | Pattern doesn't match `.git`, `.vscode` (optional warning) | Log warning, but accept pattern |
-| No circular | Pattern doesn't create infinite matches | Log warning, skip pattern |
+| No circular | Pattern doesn't create infinite matches                    | Log warning, skip pattern       |
 
 ### Config Validation
 
-| Rule | Check | Action if Invalid |
-|------|-------|-------------------|
-| Format-specific | JSON is valid JSON, gitignore follows format | Log error, skip source |
-| Pattern array | Field exists and is array (if expected) | Log warning, treat as empty |
-| Encoding | File is UTF-8 or ASCII | Log error, skip file |
-| Permissions | File is readable | Log warning, skip file |
+| Rule            | Check                                        | Action if Invalid           |
+| --------------- | -------------------------------------------- | --------------------------- |
+| Format-specific | JSON is valid JSON, gitignore follows format | Log error, skip source      |
+| Pattern array   | Field exists and is array (if expected)      | Log warning, treat as empty |
+| Encoding        | File is UTF-8 or ASCII                       | Log error, skip file        |
+| Permissions     | File is readable                             | Log warning, skip file      |
 
 ---
 
 ## Example Scenario
 
 **Workspace Setup**:
+
 - `.vscode/settings.json`: `confignore.aiIgnore: ["node_modules/**", "*.env"]`
-- `.claude/settings.json`: `ignore: ["secrets/", "api_keys.json"]`
-- `.copilotignore`: Doesn't exist
+- `.claude/settings.json`: `permissions.deny: ["Read(./secrets/)", "Read(./api_keys.json)"]`
+- `.aiexclude`: (optional) additional gitignore-style patterns for Gemini Code Assist
 
 **Detected Config**:
+
 ```typescript
 AiIgnoreConfig {
   workspaceUri: Uri.file('/home/user/project'),
@@ -354,6 +362,7 @@ AiIgnoreConfig {
 ```
 
 **File Evaluations**:
+
 - `src/app.js` → `isIgnored: false`
 - `node_modules/lib.js` → `isIgnored: true` (matches `node_modules/**`)
 - `src/config.env` → `isIgnored: true` (matches `*.env`)
@@ -367,6 +376,7 @@ AiIgnoreConfig {
 **Memory**: Cache with ~1000 entries ≈ 100KB (small)
 
 **CPU**:
+
 - Pattern matching per-file: ~0.1ms (gitignore library efficient)
 - With cache hit: <0.01ms
 - Config detection: ~10ms (file reads + parsing)

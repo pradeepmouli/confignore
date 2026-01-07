@@ -8,10 +8,12 @@
 ## Summary
 
 Implement two capabilities:
+
 - Detect if a selection (file/folder) is effectively excluded by any active source and toggle menu visibility accordingly (hide “Ignore”, show “Include” when excluded; inverse when not).
 - Support config-based include/exclude updates for v1 targets: TypeScript (tsconfig include/exclude), Prettier, ESLint. Precedence: config-based excludes > project ignore files > workspace settings. Do not auto-create missing configs.
 
 High-level approach:
+
 - Build a resolution service that evaluates a selection against supported sources and returns an EffectiveState with source provenance.
 - Register context keys (e.g., confignore.selectionExcluded/confignore.selectionMixed) and update them on selection changes to drive menu visibility.
 - Implement config target writers/readers for tsconfig, Prettier, and ESLint with safe read-modify-write and schema validation; no-op if target is missing.
@@ -82,5 +84,5 @@ test/
 ## Complexity Tracking
 
 | Violation | Why Needed | Simpler Alternative Rejected Because |
-|-----------|------------|--------------------------------------|
-| None | — | — |
+| --------- | ---------- | ------------------------------------ |
+| None      | —          | —                                    |

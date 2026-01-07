@@ -3,18 +3,20 @@
 ## New Entities
 
 ### FeatureFlags
-- includeSupport: boolean       # Runtime value from VS Code configuration
-- source: 'user' | 'workspace'  # Configuration scope that provided the value
+
+- includeSupport: boolean # Runtime value from VS Code configuration
+- source: 'user' | 'workspace' # Configuration scope that provided the value
 
 ## Modified Entities
 
 ### EffectiveState
+
 - path: string | URI
-- excluded: boolean           # true if selection is effectively excluded
-- mixed: boolean              # true for multi-selection with mixed states
-- source: Source | null       # provenance of decision for UI messaging
-- sourcesApplied: Source[]    # all matching sources for diagnostics
-- **includeStateComputed**: boolean  # NEW: true if include state was evaluated (when feature flag enabled)
+- excluded: boolean # true if selection is effectively excluded
+- mixed: boolean # true for multi-selection with mixed states
+- source: Source | null # provenance of decision for UI messaging
+- sourcesApplied: Source[] # all matching sources for diagnostics
+- **includeStateComputed**: boolean # NEW: true if include state was evaluated (when feature flag enabled)
 
 ## Relationships
 
@@ -53,13 +55,13 @@
 
 ## Context Keys Mapping
 
-| Context Key | Source | Purpose |
-|-------------|--------|---------|
-| `ignorer.features.includeSupport` | FeatureFlags.includeSupport | Gate include menu items |
-| `confignore.selectionExcluded` | EffectiveState.excluded (when computed) | Show include, hide ignore |
-| `confignore.selectionMixed` | EffectiveState.mixed | Handle multi-selection |
-| `confignore.hasTsconfig` | ConfigTarget existence check | Gate tsconfig commands |
-| `confignore.hasPrettierConfig` | ConfigTarget existence check | Gate prettier commands |
-| `confignore.hasEslintConfig` | ConfigTarget existence check | Gate eslint commands |
+| Context Key                       | Source                                  | Purpose                   |
+| --------------------------------- | --------------------------------------- | ------------------------- |
+| `ignorer.features.includeSupport` | FeatureFlags.includeSupport             | Gate include menu items   |
+| `confignore.selectionExcluded`    | EffectiveState.excluded (when computed) | Show include, hide ignore |
+| `confignore.selectionMixed`       | EffectiveState.mixed                    | Handle multi-selection    |
+| `confignore.hasTsconfig`          | ConfigTarget existence check            | Gate tsconfig commands    |
+| `confignore.hasPrettierConfig`    | ConfigTarget existence check            | Gate prettier commands    |
+| `confignore.hasEslintConfig`      | ConfigTarget existence check            | Gate eslint commands      |
 
 Note: When `ignorer.features.includeSupport` is false, `confignore.selectionExcluded` may still be computed to hide ignore commands on excluded files, but include commands won't be registered regardless.

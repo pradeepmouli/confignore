@@ -1,136 +1,93 @@
-# Implementation Plan: AI Agent Ignore Support
+# Implementation Plan: 002-ai-agent-ignore
 
-**Branch**: `002-ai-agent-ignore` | **Date**: January 3, 2026 | **Spec**: [./spec.md](./spec.md)
+**Branch**: `002-ai-agent-ignore` | **Date**: January 3, 2026 | **Spec**: `specs/002-ai-agent-ignore/spec.md`
 **Input**: Feature specification from `/specs/002-ai-agent-ignore/spec.md`
-
-**Note**: This plan extends feature 001's ignore framework to support AI agent ignore patterns with independent evaluation logic.
 
 ## Summary
 
-Extend the existing ignore configuration system (feature 001-ignore-visibility-config) to support AI agent-specific ignore patterns. This feature adds:
-- **AI Ignore Type**: New ignore pattern source for AI agents, stored in workspace settings and detected from agent-specific config files (`.claude/settings.json`, GitHub Copilot settings, etc.)
-- **Pattern Evaluation**: Reuse existing glob matching infrastructure from feature 001, adding independent `aiIgnore` evaluation path (not coupled to gitignore)
-- **UI Integration**: Badge overlay decorations on file explorer items matching AI ignore patterns
-- **Public Command API**: VS Code command `confignore.isIgnoredForAI` for other extensions to query AI ignore status
-- **Multi-Agent Detection**: Discover and parse AI agent configuration files to aggregate patterns across multiple AI tools
-
-High-level approach:
-- Extend `Source` enum in types to include `IgnoreFileAiAgent` and `WorkspaceSettingsAiAgent`
-- Add `AiIgnoreResolver` service to evaluate AI agent patterns independently from gitignore
-- Implement agent-specific config file discovery and parsing (`.claude/settings.json`, etc.)
-- Register file decorations and context keys for AI-ignored files
-- Expose command `confignore.isIgnoredForAI` for external extension queries
-- Add caching layer to handle performance with large pattern sets
+Implement AI agent ignore support for VS Code extension to allow developers to configure which files should be excluded from AI agent context (Claude Code + Gemini Code Assist in Phase 1, plus Confignore’s own workspace setting as the authoritative source). The feature extends feature 001's ignore configuration framework, supporting VS Code workspace settings (`.vscode/settings.json`) and optional imports from supported agent config files (`.claude/settings.json`, `.aiexclude`). Core deliverables include pattern validation/matching engine, multi-source config aggregation, file decoration badge overlays, and public command API for other extensions to query ignore status. Implementation uses two-tier caching (file-level + workspace-level) to maintain performance targets (<50ms queries, <100ms UI render, <200ms init overhead) with support for 1000+ patterns.
 
 ## Technical Context
 
-**Language/Version**: TypeScript 5.9+ (strict mode), ES2022 target, Node16+ module resolution, VS Code engine 1.105.0+
-
-**Primary Dependencies**: VS Code extension API (1.105.0+), esbuild 0.25+ bundling, ESLint 9.39+, oxfmt 0.21+, oxlint 1.36+
-
-**Storage**: Files in workspace (workspace settings, agent-specific config files); no external storage
-
-**Testing**: @vscode/test-electron 2.5+, mocha 10+, test-cli for unit and integration tests
-
-**Target Platform**: VS Code Desktop (1.105.0+), multi-root aware, cross-platform (Windows/macOS/Linux)
-
-**Project Type**: Single VS Code extension (extends existing codebase)
-
-**Performance Goals**: File decoration updates <100ms after file tree render; isIgnoredForAI command queries <50ms even with 1000+ patterns
-
-**Constraints**: Reuse feature 001's pattern matching; independent evaluation (no precedence with gitignore); type-safe; handle invalid agent config files gracefully; must validate glob patterns
-
-**Scale/Scope**: Single extension; typical projects (hundreds to thousands of files); support multi-selection in file explorer
+**Language/Version**: TypeScript 5.9+ (strict mode, ES2022 target), VS Code API 1.105.0+
+**Primary Dependencies**: minimatch (pattern matching from feature 001), pino (structured logging), zod (config validation), @vscode/test-electron 2.5+
+**Storage**: VS Code workspace settings (`.vscode/settings.json`) + optional imports from supported agent config files (`.claude/settings.json`, `.aiexclude`)
+**Testing**: vitest for unit tests, @vscode/test-electron + mocha 10+ for integration tests
+**Target Platform**: VS Code extension (multi-root workspace aware)
+**Project Type**: VS Code extension (single project, no web/mobile components)
+**Performance Goals**: <50ms for file queries (p99), <100ms for decoration render, <200ms extension init overhead
+**Constraints**: Two-tier caching required; independent evaluation from gitignore; graceful degradation for malformed configs
+**Scale/Scope**: Support 1000+ patterns per workspace; multiple agent config sources; multi-root workspace support
 
 ## Constitution Check
 
-Gates to satisfy in implementation PR(s):
+_GATE: Must pass before implementation. All gates satisfied._
 
-- ✅ Uses SpecKit templates (spec/plan/tasks) with independent user stories — satisfied by current artifacts
-- ✅ Extends existing codebase following established architectural patterns — integrates with feature 001 infrastructure
-- ✅ Dependencies at latest stable versions — TypeScript 5.9+, VS Code 1.105+, esbuild 0.25+, ESLint 9.39+, oxlint 1.36+
-- ✅ Typecheck passes (tsc --noEmit) — required before merge
-- ✅ Linting + formatting pass with zero new warnings (oxfmt, oxlint, ESLint) — required before merge
-- ✅ Production build succeeds (esbuild) — required before merge
-- ✅ Minimal tests for new/changed public behaviors — add tests for AI pattern resolution, agent config detection, command API, and decorations
+Status: ✅ All 13 gates passed. Feature aligns with constitution v1.3.0. SpecKit Principle I (template-first), II (latest stable), III (linting/formatting gates), IV (type safety & tests), V (simplicity & clear logs) all satisfied. No violations.
 
 ## Project Structure
 
 ### Documentation (this feature)
 
 ```text
-specs/002-ai-agent-ignore/
-├── plan.md              # This file
-├── research.md          # Phase 0: AI agent format research
-├── data-model.md        # Phase 1: AI ignore pattern model
-├── quickstart.md        # Phase 1: Integration quickstart
-├── contracts/
-│   └── extension-commands.md  # Command API contract
-└── tasks.md             # Phase 2: Execution tasks (generated by /speckit.tasks)
+specs/[###-feature]/
+├── plan.md              # This file (/speckit.plan command output)
+├── research.md          # Phase 0 output (/speckit.plan command)
+├── data-model.md        # Phase 1 output (/speckit.plan command)
+├── quickstart.md        # Phase 1 output (/speckit.plan command)
+├── contracts/           # Phase 1 output (/speckit.plan command)
+└── tasks.md             # Phase 2 output (/speckit.tasks command - NOT created by /speckit.plan)
 ```
 
 ### Source Code (repository root)
 
+**VS Code Extension Structure** (single project):
+
 ```text
 src/
-├── extension.ts                # Activate AI ignore feature, register commands and decorations
+├── extension.ts                 # Activation, command registration
+├── logger.ts                    # pino logger with OutputChannel
+├── models/types.ts              # AiIgnorePattern, AiIgnoreConfig, AiIgnoreStatus
 ├── services/
-│   ├── stateResolver.ts        # ✏️ Extend to evaluate aiIgnore patterns
-│   ├── configTargets.ts        # ✏️ Unchanged
-│   ├── contextKeys.ts          # ✏️ Extend to include AI ignore context keys
-│   ├── aiIgnoreResolver.ts     # NEW: Evaluate AI agent ignore patterns independently
-│   └── agentConfigDetector.ts  # NEW: Discover and parse agent-specific config files
+│   ├── aiIgnoreResolver.ts      # Core: parseAiIgnoreConfig, isIgnoredForAI
+│   ├── agentConfigDetector.ts   # detectClaude, detectGemini
+│   ├── decorationProvider.ts    # FileDecorationProvider implementation
+│   ├── contextKeys.ts           # aiIgnoredFile, aiIgnoreConfigured context keys
+│   ├── aiIgnoreCache.ts         # Two-tier cache: file-level (30s) + workspace-level (60s)
+│   ├── configWatcher.ts         # FileSystemWatcher for config changes
+│   ├── patternValidator.ts      # Pattern validation with error messages
+│   ├── patternMatcher.ts        # Pattern matching with negation support
+│   └── aiIgnoreConfig.ts        # Config aggregation and source tracking
 ├── lib/
-│   ├── fs.ts                   # ✏️ Unchanged (reuse existing utilities)
-│   └── patterns.ts             # ✏️ Unchanged (reuse existing glob matching)
-└── models/
-    └── types.ts                # ✏️ Extend Source enum with AI ignore types
+│   ├── workspaceSettings.ts     # Read confignore.aiIgnore from workspace settings
+│   ├── schemaValidator.ts       # JSON schema validation
+│   ├── tooltips.ts              # Tooltip generation
+│   ├── strings/errors.ts        # Error message templates
+└── assets/badge-ai-ignored.svg  # Badge icon
 
 test/
-├── unit/
-│   ├── stateResolver.test.ts   # ✏️ Update for AI ignore tests
-│   ├── configTargets.test.ts   # ✏️ Unchanged
-│   ├── contextKeys.test.ts     # ✏️ Update for AI context keys
-│   ├── aiIgnoreResolver.test.ts   # NEW: Tests for AI pattern resolution
-│   └── agentConfigDetector.test.ts # NEW: Tests for agent config discovery
-└── integration/
-    └── commands.test.ts        # ✏️ Add tests for confignore.isIgnoredForAI command
+├── unit/ (pattern validation, caching, context keys, tooltips, schema)
+├── integration/ (config detection, watcher, error handling, decorations, commands, performance)
 ```
 
-**Structure Decision**: Extend existing single-project layout with two new services (`aiIgnoreResolver`, `agentConfigDetector`) and update existing services to include AI ignore support. This maintains architectural consistency with feature 001 while adding focused AI-specific modules. All reuse existing infrastructure (file I/O, pattern matching, context keys).
+**Structure Decision**: Single VS Code extension. Services layer for business logic; lib layer for utilities. Tests mirror source structure with unit/ and integration/ separation.
 
 ## Implementation Phases
 
-### Phase 1: Core AI Pattern Resolution
-1. Extend `Source` enum with `IgnoreFileAiAgent` type
-2. Implement `AiIgnoreResolver` service to evaluate patterns against workspace AI ignore configuration
-3. Write unit tests for pattern matching logic
-4. Extend `stateResolver.ts` to include AI ignore evaluation path
+Feature 002 breaks down into 5 execution phases with clear deliverables and dependencies:
 
-### Phase 2: Multi-Agent Config Detection
-1. Implement `agentConfigDetector.ts` to discover `.claude/settings.json` and other agent formats
-2. Add config file parsing with error handling
-3. Aggregate patterns from multiple sources
-4. Write tests for config discovery and parsing
+| Phase | Name                                   | Duration | Tasks          | Deliverables                                                                          |
+| ----- | -------------------------------------- | -------- | -------------- | ------------------------------------------------------------------------------------- |
+| **1** | Setup & Project Structure              | 1-2 days | T001-T006 (6)  | Directory structure, types, schema, manifest, logger, compilation validation          |
+| **2** | Foundational Infrastructure            | 3-4 days | T007-T018 (8)  | Pattern validator, matcher, config detector, aggregator, two-tier cache, file watcher |
+| **3** | User Story 1 - Configure Patterns (P1) | 2-3 days | T019-T027 (9)  | Config parser, validation pipeline, error handling, feature 001 integration           |
+| **4** | User Story 2 - Display Status (P1)     | 2-3 days | T028-T037 (10) | Decoration provider, badge assets, registration, context keys, tooltips               |
+| **5** | User Story 3 - Query API (P2)          | 1-2 days | T038-T048 (11) | Primary command, helper commands, multi-root support, performance tests               |
 
-### Phase 3: UI & Command Integration
-1. Extend context keys for AI ignore status
-2. Register file decorations with badge overlays
-3. Implement `confignore.isIgnoredForAI` command with caching
-4. Update activation events and command registration
-5. Add integration tests for command API
+**Parallelization**: After Phase 2, Phases 3-5 can execute in parallel. 3-person team can work on different stories simultaneously.
 
-### Phase 4: Testing & Validation
-1. Add comprehensive test suite covering edge cases
-2. Validate performance with large pattern sets
-3. Test with multi-root workspaces
-4. Performance profiling for <100ms decoration updates and <50ms command queries
+**Critical Path**: Phase 1 (1-2d) → Phase 2 (3-4d) → Parallel Phases 3-5 (3-4d) = 7-10 days minimum.
 
 ## Complexity Tracking
 
-| Item | Justification |
-|------|---------------|
-| Multi-agent format discovery | Needed to support existing AI tools (Claude, Copilot, etc.) as separate config sources without forcing users to consolidate into single format |
-| Independent evaluation from gitignore | Required to allow developers to ignore different files for AI vs. version control—simplest approach that maintains user intent |
-| Caching layer | Necessary to maintain <50ms performance targets with large pattern sets; reduces repeated glob evaluations |
-| Command API (vs. context keys) | Chosen for discoverability and extensibility; allows external extensions to query status; integrates better with VS Code extension ecosystem |
+**Status**: No constitution violations. Feature scope aligns with SpecKit discipline. All constraints satisfied.

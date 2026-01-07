@@ -1,211 +1,262 @@
 {
-	"name": "confignore",
-	"displayName": "Confignore",
-	"description": "Add files and folders to ignore files via context menu",
-	"version": "0.0.3",
-	"publisher": "pmouli",
-	"license": "MIT",
-	"repository": {
-		"type": "git",
-		"url": "https://github.com/pradeepmouli/confignore"
-	},
-	"engines": {
-		"vscode": "^1.105.0"
-	},
-	"categories": [
-		"Other"
-	],
-	"activationEvents": [
-		"onStartupFinished"
-	],
-	"main": "./dist/extension.js",
-	"contributes": {
-		"configuration": {
-			"title": "Confignore",
-			"properties": {
-				"ignorer.features.includeSupport": {
-					"type": "boolean",
-					"default": false,
-					"description": "Enable include/unignore commands and config-based inclusion updates. Experimental feature. Reload the window after changing this setting to update available commands.",
-					"scope": "window"
-				},
-				"confignore.defaultIgnoreFile": {
-					"type": "string",
-					"enum": [
-						"git",
-						"docker",
-						"eslint",
-						"prettier",
-						"npm",
-						"stylelint",
-						"vscode"
-					],
-					"default": "git",
-					"description": "Default ignore file to use with quick add command"
-				},
-				"confignore.confirmMixedState": {
-					"type": "boolean",
-					"default": true,
-					"description": "Show confirmation dialog for mixed-state selections"
-				},
-				"confignore.checkDuplicates": {
-					"type": "boolean",
-					"default": true,
-					"description": "Detect and skip duplicate patterns when adding to ignore files"
-				}
-			}
-		},
-		"submenus": [
-			{
-				"id": "confignore.submenu",
-				"label": "$(exclude) Add to Ignore"
-			}
-		],
-		"commands": [
-			{
-				"command": "confignore.addToIgnore.quickPick",
-				"title": "Add to Ignore (pick target)",
-				"category": "confignore"
-			},
-			{
-				"command": "confignore.addToIgnore.git",
-				"title": "git (.gitignore)",
-				"category": "confignore"
-			},
-			{
-				"command": "confignore.addToIgnore.docker",
-				"title": "docker (.dockerignore)",
-				"category": "confignore"
-			},
-			{
-				"command": "confignore.addToIgnore.eslint",
-				"title": "eslint (.eslintignore)",
-				"category": "confignore"
-			},
-			{
-				"command": "confignore.addToIgnore.prettier",
-				"title": "prettier (.prettierignore)",
-				"category": "confignore"
-			},
-			{
-				"command": "confignore.addToIgnore.npm",
-				"title": "npm (.npmignore)",
-				"category": "confignore"
-			},
-			{
-				"command": "confignore.addToIgnore.stylelint",
-				"title": "stylelint (.stylelintignore)",
-				"category": "confignore"
-			},
-			{
-				"command": "confignore.addToIgnore.vscode",
-				"title": "vscode (.vscodeignore)",
-				"category": "confignore"
-			},
-			{
-				"command": "confignore.addToIgnore.tsconfig",
-				"title": "tsconfig (tsconfig.json 'exclude' array)",
-				"category": "confignore"
-			},
-			{
-				"command": "confignore.include",
-				"title": "Include (remove from exclusions)",
-				"category": "confignore"
-			}
-		],
-		"menus": {
-			"explorer/context": [
-				{
-					"submenu": "confignore.submenu",
-					"group": "navigation@5"
-				}
-			],
-			"confignore.submenu": [
-				{
-					"command": "confignore.addToIgnore.quickPick",
-					"group": "0_pick",
-					"when": "!confignore.selectionExcluded"
-				},
-				{
-					"command": "confignore.include",
-					"group": "0_pick",
-					"when": "confignore.selectionExcluded && ignorer.features.includeSupport"
-				},
-				{
-					"command": "confignore.addToIgnore.git",
-					"group": "1_targets",
-					"when": "confignore.hasGit && !confignore.selectionExcluded"
-				},
-				{
-					"command": "confignore.addToIgnore.docker",
-					"group": "1_targets",
-					"when": "confignore.hasDocker && !confignore.selectionExcluded"
-				},
-				{
-					"command": "confignore.addToIgnore.eslint",
-					"group": "1_targets",
-					"when": "confignore.hasEslint && !confignore.selectionExcluded"
-				},
-				{
-					"command": "confignore.addToIgnore.prettier",
-					"group": "1_targets",
-					"when": "confignore.hasPrettier && !confignore.selectionExcluded"
-				},
-				{
-					"command": "confignore.addToIgnore.npm",
-					"group": "1_targets",
-					"when": "confignore.hasNpm && !confignore.selectionExcluded"
-				},
-				{
-					"command": "confignore.addToIgnore.stylelint",
-					"group": "1_targets",
-					"when": "confignore.hasStylelint && !confignore.selectionExcluded"
-				},
-				{
-					"command": "confignore.addToIgnore.vscode",
-					"group": "1_targets",
-					"when": "confignore.hasVscode && !confignore.selectionExcluded"
-				},
-				{
-					"command": "confignore.addToIgnore.tsconfig",
-					"group": "1_targets",
-					"when": "confignore.hasTsconfig && !confignore.selectionExcluded"
-				}
-			]
-		}
-	},
-	"scripts": {
-		"vscode:prepublish": "npm run package",
-		"compile": "npm run check-types && npm run lint && node esbuild.js",
-		"watch": "npm-run-all -p watch:*",
-		"watch:esbuild": "node esbuild.js --watch",
-		"watch:tsc": "tsc --noEmit --watch --project tsconfig.json",
-		"package": "npm run check-types && npm run lint && node esbuild.js --production",
-		"compile-tests": "tsc -p . --outDir out",
-		"watch-tests": "tsc -p . -w --outDir out",
-		"pretest": "npm run compile-tests && npm run compile && npm run lint",
-		"check-types": "tsc --noEmit",
-		"lint": "eslint src",
-		"test": "vscode-test",
-		"vsce:package": "vsce package --no-dependencies",
-		"vsce:publish": "vsce publish --no-dependencies"
-	},
-	"devDependencies": {
-		"@types/mocha": "^10.0.10",
-		"@types/node": "22.x",
-		"@types/vscode": "^1.105.0",
-		"@typescript-eslint/eslint-plugin": "^8.45.0",
-		"@typescript-eslint/parser": "^8.45.0",
-		"@vscode/test-cli": "^0.0.11",
-		"@vscode/test-electron": "^2.5.2",
-		"@vscode/vsce": "^3.6.2",
-		"esbuild": "^0.25.10",
-		"eslint": "^9.36.0",
-		"jiti": "^2.6.1",
-		"npm-run-all": "^4.1.5",
-		"oxc": "^1.0.1",
-		"oxfmt": "^0.21.0",
-		"oxlint": "^1.36.0",
-		"typescript": "^5.9.3"
-	}
+  "name": "confignore",
+  "displayName": "Confignore",
+  "version": "0.0.3",
+  "description": "Add files and folders to ignore files via context menu",
+  "categories": [
+    "Other"
+  ],
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/pradeepmouli/confignore"
+  },
+  "publisher": "pmouli",
+  "main": "./dist/extension.js",
+  "scripts": {
+    "vscode:prepublish": "npm run package",
+    "compile": "npm run check-types && npm run lint && node esbuild.js",
+    "watch": "npm-run-all -p watch:*",
+    "watch:esbuild": "node esbuild.js --watch",
+    "watch:tsc": "tsc --noEmit --watch --project tsconfig.json",
+    "package": "npm run check-types && npm run lint && node esbuild.js --production",
+    "compile-tests": "tsc -p . --outDir out",
+    "watch-tests": "tsc -p . -w --outDir out",
+    "pretest": "npm run compile-tests && npm run compile && npm run lint",
+    "check-types": "tsc --noEmit",
+    "lint": "eslint src",
+    "test": "vscode-test",
+    "vsce:package": "vsce package --no-dependencies",
+    "vsce:publish": "vsce publish --no-dependencies"
+  },
+  "dependencies": {
+    "minimatch": "^9.0.3",
+    "pino": "^9.5.0"
+  },
+  "devDependencies": {
+    "@types/mocha": "^10.0.10",
+    "@types/node": "22.x",
+    "@types/vscode": "^1.105.0",
+    "@typescript-eslint/eslint-plugin": "^8.45.0",
+    "@typescript-eslint/parser": "^8.45.0",
+    "@vscode/test-cli": "^0.0.11",
+    "@vscode/test-electron": "^2.5.2",
+    "@vscode/vsce": "^3.6.2",
+    "esbuild": "^0.25.10",
+    "eslint": "^9.36.0",
+    "jiti": "^2.6.1",
+    "npm-run-all": "^4.1.5",
+    "oxc": "^1.0.1",
+    "oxfmt": "^0.21.0",
+    "oxlint": "^1.36.0",
+    "typescript": "^5.9.3"
+  },
+  "contributes": {
+    "configuration": {
+      "title": "Confignore",
+      "properties": {
+        "ignorer.features.includeSupport": {
+          "type": "boolean",
+          "default": false,
+          "description": "Enable include/unignore commands and config-based inclusion updates. Experimental feature. Reload the window after changing this setting to update available commands.",
+          "scope": "window"
+        },
+        "confignore.defaultIgnoreFile": {
+          "type": "string",
+          "enum": [
+            "git",
+            "docker",
+            "eslint",
+            "prettier",
+            "npm",
+            "stylelint",
+            "vscode"
+          ],
+          "default": "git",
+          "description": "Default ignore file to use with quick add command"
+        },
+        "confignore.confirmMixedState": {
+          "type": "boolean",
+          "default": true,
+          "description": "Show confirmation dialog for mixed-state selections"
+        },
+        "confignore.checkDuplicates": {
+          "type": "boolean",
+          "default": true,
+          "description": "Detect and skip duplicate patterns when adding to ignore files"
+        },
+        "confignore.aiIgnore": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Gitignore-style pattern applied to AI agent context (supports negation with !pattern)."
+          },
+          "default": [],
+          "markdownDescription": "Gitignore-style patterns to exclude files from AI agents. Supports wildcards, **, and negation (!pattern).",
+          "scope": "resource"
+        }
+      }
+    },
+    "submenus": [
+      {
+        "id": "confignore.submenu",
+        "label": "$(exclude) Add to Ignore"
+      }
+    ],
+    "commands": [
+      {
+        "command": "confignore.addToIgnore.quickPick",
+        "title": "Add to Ignore (pick target)",
+        "category": "confignore"
+      },
+      {
+        "command": "confignore.addToIgnore.git",
+        "title": "git (.gitignore)",
+        "category": "confignore"
+      },
+      {
+        "command": "confignore.addToIgnore.docker",
+        "title": "docker (.dockerignore)",
+        "category": "confignore"
+      },
+      {
+        "command": "confignore.addToIgnore.eslint",
+        "title": "eslint (.eslintignore)",
+        "category": "confignore"
+      },
+      {
+        "command": "confignore.addToIgnore.prettier",
+        "title": "prettier (.prettierignore)",
+        "category": "confignore"
+      },
+      {
+        "command": "confignore.addToIgnore.npm",
+        "title": "npm (.npmignore)",
+        "category": "confignore"
+      },
+      {
+        "command": "confignore.addToIgnore.stylelint",
+        "title": "stylelint (.stylelintignore)",
+        "category": "confignore"
+      },
+      {
+        "command": "confignore.addToIgnore.vscode",
+        "title": "vscode (.vscodeignore)",
+        "category": "confignore"
+      },
+      {
+        "command": "confignore.addToIgnore.tsconfig",
+        "title": "tsconfig (tsconfig.json 'exclude' array)",
+        "category": "confignore"
+      },
+      {
+        "command": "confignore.include",
+        "title": "Include (remove from exclusions)",
+        "category": "confignore"
+      },
+      {
+        "command": "confignore.isIgnoredForAI",
+        "title": "Check if file is ignored for AI",
+        "category": "confignore"
+      },
+      {
+        "command": "confignore.openAiIgnoreSettings",
+        "title": "Open AI Ignore Settings",
+        "category": "confignore"
+      },
+      {
+        "command": "confignore.reloadAiIgnoreConfig",
+        "title": "Reload AI Ignore Configuration",
+        "category": "confignore"
+      },
+      {
+        "command": "confignore.showAiIgnoreStatus",
+        "title": "Show AI Ignore Status",
+        "category": "confignore"
+      }
+    ],
+    "menus": {
+      "explorer/context": [
+        {
+          "submenu": "confignore.submenu",
+          "group": "navigation@5"
+        }
+      ],
+      "confignore.submenu": [
+        {
+          "command": "confignore.addToIgnore.quickPick",
+          "group": "0_pick",
+          "when": "!confignore.selectionExcluded"
+        },
+        {
+          "command": "confignore.include",
+          "group": "0_pick",
+          "when": "confignore.selectionExcluded && ignorer.features.includeSupport"
+        },
+        {
+          "command": "confignore.addToIgnore.git",
+          "group": "1_targets",
+          "when": "confignore.hasGit && !confignore.selectionExcluded"
+        },
+        {
+          "command": "confignore.addToIgnore.docker",
+          "group": "1_targets",
+          "when": "confignore.hasDocker && !confignore.selectionExcluded"
+        },
+        {
+          "command": "confignore.addToIgnore.eslint",
+          "group": "1_targets",
+          "when": "confignore.hasEslint && !confignore.selectionExcluded"
+        },
+        {
+          "command": "confignore.addToIgnore.prettier",
+          "group": "1_targets",
+          "when": "confignore.hasPrettier && !confignore.selectionExcluded"
+        },
+        {
+          "command": "confignore.addToIgnore.npm",
+          "group": "1_targets",
+          "when": "confignore.hasNpm && !confignore.selectionExcluded"
+        },
+        {
+          "command": "confignore.addToIgnore.stylelint",
+          "group": "1_targets",
+          "when": "confignore.hasStylelint && !confignore.selectionExcluded"
+        },
+        {
+          "command": "confignore.addToIgnore.vscode",
+          "group": "1_targets",
+          "when": "confignore.hasVscode && !confignore.selectionExcluded"
+        },
+        {
+          "command": "confignore.addToIgnore.tsconfig",
+          "group": "1_targets",
+          "when": "confignore.hasTsconfig && !confignore.selectionExcluded"
+        }
+      ],
+      "commandPalette": [
+        {
+          "command": "confignore.openAiIgnoreSettings",
+          "group": "navigation"
+        },
+        {
+          "command": "confignore.reloadAiIgnoreConfig",
+          "when": "confignore.aiIgnoreConfigured",
+          "group": "navigation"
+        },
+        {
+          "command": "confignore.showAiIgnoreStatus",
+          "when": "confignore.aiIgnoreConfigured",
+          "group": "navigation"
+        }
+      ]
+    }
+  },
+  "activationEvents": [
+    "onStartupFinished"
+  ],
+  "engines": {
+    "vscode": "^1.105.0"
+  }
 }

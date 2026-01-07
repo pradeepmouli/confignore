@@ -110,6 +110,7 @@ const shouldShowInclude = flagEnabled && selectionExcluded;
 ## Configuration Scope
 
 The `ignorer.features.includeSupport` setting has **window** scope, meaning:
+
 - Applies to the entire VS Code window
 - Not per-workspace-folder
 - Can be set at User level (global) or Workspace level
@@ -118,12 +119,14 @@ The `ignorer.features.includeSupport` setting has **window** scope, meaning:
 ## Expected Behavior
 
 ### When Flag is Disabled (default)
+
 - Include commands NOT registered → not available in Command Palette
 - Include menu items NOT shown in context menus (even on excluded files)
 - Ignore commands still work normally
 - Ignore commands still hidden when file is excluded (but no include alternative shown)
 
 ### When Flag is Enabled
+
 - Include commands registered → available in Command Palette
 - Include menu items shown in context menus when file/folder is excluded
 - Config-based include updates work (tsconfig, prettier, eslint)
@@ -132,12 +135,15 @@ The `ignorer.features.includeSupport` setting has **window** scope, meaning:
 ## Troubleshooting
 
 ### "Include command not showing after enabling flag"
+
 - **Solution**: Reload the VS Code window. Command registration happens at activation.
 
 ### "Changes not taking effect"
+
 - **Solution**: Verify setting is saved, check for typos (`ignorer.features.includeSupport` not `ignorer.includeSupport`)
 
 ### "Tests failing intermittently"
+
 - **Solution**: Ensure test setup/teardown properly sets and clears the flag. Use `suiteSetup`/`suiteTeardown` or `beforeEach`/`afterEach` consistently.
 
 ## Rollout Plan Reference

@@ -3,6 +3,7 @@
 ## Decisions
 
 ### Feature Flag Implementation Pattern
+
 - **Decision**: Use VS Code configuration setting `ignorer.features.includeSupport` (boolean, default `false`)
 - **Rationale**:
   - VS Code provides built-in configuration infrastructure with validation, UI, and per-workspace overrides
@@ -15,6 +16,7 @@
   - Command palette toggle (rejected: not persistent, harder to discover)
 
 ### Command Registration Strategy
+
 - **Decision**: Conditional command registration at activation time based on flag value
 - **Rationale**:
   - Commands not registered when flag is disabled = zero overhead
@@ -26,6 +28,7 @@
   - Dynamic registration/disposal on config change (rejected: complex lifecycle management, potential memory leaks)
 
 ### Context Key Gating
+
 - **Decision**: Add `ignorer.features.includeSupport` context key updated on activation and config changes
 - **Rationale**:
   - `when` clauses in menus can reference both flag and selection state
@@ -37,6 +40,7 @@
   - Separate context keys per include command (rejected: unnecessary complexity)
 
 ### State Resolution Optimization
+
 - **Decision**: Skip include-state computation when flag is disabled
 - **Rationale**:
   - Performance optimization - no need to determine if selection is excluded if include commands unavailable
@@ -49,6 +53,7 @@
 ## Patterns & Best Practices
 
 ### VS Code Feature Flag Patterns
+
 - Use `contributes.configuration` in `package.json` to define settings schema
 - Read config via `vscode.workspace.getConfiguration('ignorer').get('features.includeSupport')`
 - Listen to `vscode.workspace.onDidChangeConfiguration` for live updates
@@ -56,6 +61,7 @@
 - Gate menu contributions with compound `when` clauses: `context1 && context2`
 
 ### Progressive Feature Rollout
+
 - Default to disabled for initial release (alpha/beta phase)
 - Document clearly in README with "Experimental Features" section
 - Gather feedback before flipping default to enabled
@@ -63,6 +69,7 @@
 - Plan for eventual removal of flag once feature is stable
 
 ### Testing Strategy
+
 - Parameterize tests with flag enabled/disabled
 - Use VS Code test configuration overrides: `vscode.workspace.getConfiguration().update()`
 - Test matrix: flag off (default), flag on (opt-in), flag toggled (config change)
@@ -70,6 +77,7 @@
 - Verify menu visibility matches flag + selection state
 
 ### Configuration Change Handling
+
 - Inform user that reload may be required for command registration changes
 - For context keys, update immediately on configuration change
 - Consider showing notification: "Include support enabled/disabled. Reload window to update commands."
@@ -78,6 +86,7 @@
 ## Implementation Notes
 
 ### Package.json Configuration Schema
+
 ```json
 "contributes": {
   "configuration": {
@@ -95,6 +104,7 @@
 ```
 
 ### Activation Flow
+
 1. Read `ignorer.features.includeSupport` configuration
 2. Set `ignorer.features.includeSupport` context key
 3. Conditionally register include commands based on flag
@@ -102,6 +112,7 @@
 5. On config change: update context key, notify user to reload if commands affected
 
 ### File Impact Summary
+
 - `package.json`: Add configuration contribution
 - `src/extension.ts`: Read flag, conditional command registration, config listener
 - `src/services/contextKeys.ts`: Add flag context key, compound when expressions

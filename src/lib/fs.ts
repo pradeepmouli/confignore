@@ -9,14 +9,14 @@ import * as path from 'path';
  * Atomically read a file as UTF-8 text
  */
 export async function readFile(filePath: string): Promise<string> {
-	try {
-		return await fs.readFile(filePath, 'utf8');
-	} catch (error) {
-		if ((error as NodeJS.ErrnoException).code === 'ENOENT') {
-			throw new Error(`File not found: ${filePath}`);
-		}
-		throw error;
-	}
+  try {
+    return await fs.readFile(filePath, 'utf8');
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code === 'ENOENT') {
+      throw new Error(`File not found: ${filePath}`, { cause: error });
+    }
+    throw error;
+  }
 }
 
 /**
@@ -24,21 +24,21 @@ export async function readFile(filePath: string): Promise<string> {
  * Creates parent directories if needed
  */
 export async function writeFile(filePath: string, content: string): Promise<void> {
-	const dir = path.dirname(filePath);
-	await fs.mkdir(dir, { recursive: true });
-	await fs.writeFile(filePath, content, 'utf8');
+  const dir = path.dirname(filePath);
+  await fs.mkdir(dir, { recursive: true });
+  await fs.writeFile(filePath, content, 'utf8');
 }
 
 /**
  * Check if file exists
  */
 export async function fileExists(filePath: string): Promise<boolean> {
-	try {
-		await fs.access(filePath);
-		return true;
-	} catch {
-		return false;
-	}
+  try {
+    await fs.access(filePath);
+    return true;
+  } catch {
+    return false;
+  }
 }
 
 /**
@@ -46,32 +46,32 @@ export async function fileExists(filePath: string): Promise<boolean> {
  * Strips comments before parsing
  */
 export function parseJsonc(text: string): unknown {
-	// Simple JSONC parser: strip single-line and multi-line comments
-	const stripped = text
-		.replace(/\/\*[\s\S]*?\*\//g, '') // Remove /* */ comments
-		.replace(/\/\/.*/g, ''); // Remove // comments
-	return JSON.parse(stripped);
+  // Simple JSONC parser: strip single-line and multi-line comments
+  const stripped = text
+    .replace(/\/\*[\s\S]*?\*\//g, '') // Remove /* */ comments
+    .replace(/\/\/.*/g, ''); // Remove // comments
+  return JSON.parse(stripped);
 }
 
 /**
  * Stringify JSON with formatting (2-space indent)
  */
 export function stringifyJson(obj: unknown): string {
-	return JSON.stringify(obj, null, 2);
+  return JSON.stringify(obj, null, 2);
 }
 
 /**
  * Read and parse JSON/JSONC file
  */
 export async function readJsonFile<T = unknown>(filePath: string): Promise<T> {
-	const content = await readFile(filePath);
-	return parseJsonc(content) as T;
+  const content = await readFile(filePath);
+  return parseJsonc(content) as T;
 }
 
 /**
  * Write JSON file with formatting
  */
 export async function writeJsonFile(filePath: string, obj: unknown): Promise<void> {
-	const content = stringifyJson(obj);
-	await writeFile(filePath, content + '\n');
+  const content = stringifyJson(obj);
+  await writeFile(filePath, content + '\n');
 }

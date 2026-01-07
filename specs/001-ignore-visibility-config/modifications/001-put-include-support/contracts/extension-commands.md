@@ -3,6 +3,7 @@
 ## Modified Commands
 
 ### confignore.include (modified from original)
+
 - Input: selection (URI[]), workspaceFolder, source? (optional when known)
 - **Preconditions** (NEW):
   - `ignorer.features.includeSupport` configuration MUST be `true`
@@ -13,6 +14,7 @@
 ## New Context Keys
 
 ### ignorer.features.includeSupport
+
 - Type: boolean
 - Source: VS Code configuration `ignorer.features.includeSupport`
 - Updated: On activation, on configuration change
@@ -21,17 +23,20 @@
 ## Modified Menu Visibility (when clauses)
 
 ### Original Include Command Menu
+
 - **Was**: `when: confignore.selectionExcluded`
 - **Now**: `when: ignorer.features.includeSupport && confignore.selectionExcluded`
 - **Reason**: Only show include commands when both feature is enabled AND selection is excluded
 
 ### Ignore Command Menus (unchanged)
+
 - `when: confignore.selectionMixed || !confignore.selectionExcluded`
 - Still functions to hide ignore commands when selection is excluded (even if include commands not available)
 
 ## Configuration Change Events
 
 ### Listener: onDidChangeConfiguration
+
 - Filter: `ignorer.features`
 - Action on change:
   1. Read new value of `ignorer.features.includeSupport`
@@ -44,6 +49,7 @@ Note: Command registration happens at activation time. Configuration changes upd
 ## Unchanged Contracts
 
 All ignore commands and their contracts remain unchanged:
+
 - confignore.addToIgnore.quickPick
 - confignore.addToIgnore.git
 - confignore.addToIgnore.docker
@@ -55,10 +61,12 @@ All ignore commands and their contracts remain unchanged:
 - confignore.addToIgnore.tsconfig
 
 Context keys for config existence remain unchanged:
+
 - confignore.hasTsconfig
 - confignore.hasPrettierConfig
 - confignore.hasEslintConfig
 
 Context keys for selection state remain unchanged:
+
 - confignore.selectionExcluded
 - confignore.selectionMixed

@@ -5,7 +5,7 @@
 **Status**: Draft
 **Input**: User description: "add support for ignoring for ai agents"
 
-## User Scenarios & Testing *(mandatory)*
+## User Scenarios & Testing _(mandatory)_
 
 <!--
   IMPORTANT: User stories should be PRIORITIZED as user journeys ordered by importance.
@@ -24,11 +24,13 @@
 
 - **Feature 001 (Ignore Visibility Config)**: This feature extends the ignore configuration system established in 001-ignore-visibility-config. The AI agent ignore support reuses the existing ignore pattern evaluation framework, configuration storage mechanisms, and UI components where applicable. Integration ensures consistency across all ignore types (git, workspace, AI agent, etc.).
 
-### User Scenarios & Testing *(mandatory)*
+### User Scenarios & Testing _(mandatory)_
 
 ### User Story 1 - Configure AI Agent Ignore Patterns (Priority: P1)
 
 A developer wants to specify which files and directories should be excluded from AI agent context (e.g., ChatGPT, GitHub Copilot, Claude) to improve response quality and reduce token usage. They need a configuration option in their project's ignore settings that explicitly designates patterns for AI agents.
+
+**Scope note**: Confignore evaluates “ignored for AI” status (settings plus supported imports), displays it in VS Code, and exposes a command API so other extensions/tools can choose to exclude files. Confignore does not and cannot guarantee that an external AI product will enforce these exclusions unless that product integrates with Confignore or implements its own exclusion mechanism.
 
 **Why this priority**: This is the core feature request - the fundamental ability to configure AI-specific ignore patterns. Without this, the feature cannot deliver any value.
 
@@ -83,46 +85,48 @@ A developer using VS Code extensions (including AI assistants integrated as exte
 - What happens when ignore patterns use complex glob syntax that may be ambiguous?
 - How should the system respond when agent-specific configuration files (e.g., `.claude/settings.json`) have parsing errors?
 
-## Requirements *(mandatory)*
+**Symlink policy**: Pattern evaluation SHALL NOT follow symlink targets; matching is performed against the symlink path itself to avoid traversal and cycles.
+
+## Requirements _(mandatory)_
 
 ### Functional Requirements
 
 - **FR-001**: System MUST extend the existing ignore configuration framework from feature 001 to support AI agent ignore type, reusing pattern parsing and evaluation infrastructure
-- **FR-002**: System MUST support configuration of AI agent ignore patterns through VS Code workspace settings (`.vscode/settings.json`) as primary source, and MUST also detect and parse patterns from other AI agent configuration files (`.claude/settings.json`, GitHub Copilot settings, and similar agent-specific formats)
+- **FR-002**: System MUST support configuration of AI agent ignore patterns through VS Code workspace settings (`.vscode/settings.json`) as the primary source in Phase 1, and MAY optionally import additional patterns from supported agent configurations that are both local workspace files and documented as affecting agent file access/context: Claude Code `.claude/settings.json` (import file read exclusions from `permissions.deny` entries of the form `Read(./path-or-glob)`) and Gemini Code Assist `.aiexclude` (gitignore-style); formats documented in research.md; other agents deferred to Phase 2
 - **FR-003**: System MUST parse and evaluate glob patterns for AI agent ignores (supporting wildcards, negation, and directory-specific patterns)
-- **FR-004**: Users MUST be able to define AI agent ignore patterns per project in workspace settings, and the system MUST respect patterns defined in AI agent-specific configuration files (read-only detection)
-- **FR-005**: System MUST provide visual indicators in VS Code file explorer using badge overlays on file icons for files matching AI agent ignore patterns, consistent with VS Code's standard decoration conventions
+- **FR-004**: Users MUST be able to define AI agent ignore patterns per project in workspace settings, and the system MUST respect patterns imported from **supported** agent-specific configuration sources (Phase 1: Claude Code `.claude/settings.json` deny `Read(...)` rules; Gemini Code Assist `.aiexclude`) as read-only detection/import
+- **FR-005**: System MUST provide visual indicators in VS Code file explorer using a separate file decoration layer with custom badge icon overlaid on native file icons for files matching AI agent ignore patterns, ensuring no visual conflicts with other VS Code extensions
 - **FR-006**: System MUST expose a public VS Code command API (e.g., `confignore.isIgnoredForAI`) that other extensions can invoke to query whether a file is ignored for AI agents, returning accurate boolean results
 - **FR-007**: System MUST support both positive patterns (files to exclude) and negation patterns (exceptions to exclusions)
 - **FR-008**: System MUST handle relative paths correctly, resolving them against the workspace root
-- **FR-009**: System MUST provide clear error messages when ignore patterns are invalid or malformed
+- **FR-009**: System MUST provide clear error messages when ignore patterns are invalid or malformed, displaying errors via VS Code notification popups when configuration loads/changes, and providing static JSON schema validation in the settings editor for `.vscode/settings.json`
 - **FR-010**: System MUST evaluate AI agent ignore patterns independently from gitignore rules with no precedence relationship—a file can be ignored for AI but tracked in git (or vice versa) without conflict
 - **FR-011**: System MUST cache ignore evaluation results to maintain performance with large pattern sets
 
 ### Key Entities
 
 - **AI Ignore Pattern**: A glob pattern string that matches files/directories to exclude from AI agent context (stored in workspace settings or agent-specific config files)
-- **AI Ignore Config**: The collection of all AI agent ignore patterns for a project, aggregated from VS Code workspace settings and detected agent-specific configuration files (`.claude/settings.json`, Copilot settings, etc.)
+- **AI Ignore Config**: The collection of all AI agent ignore patterns for a project, aggregated from VS Code workspace settings and supported agent-specific configuration files (Phase 1: `.claude/settings.json` deny `Read(...)` rules; `.aiexclude`)
 - **Ignore Status**: The result of evaluating whether a specific file path matches AI agent ignore patterns (ignored/not ignored)
 - **Configuration Context**: VS Code workspace settings that store AI ignore patterns and preferences for AI agent ignore display
 
-## Success Criteria *(mandatory)*
+## Success Criteria _(mandatory)_
 
 ### Measurable Outcomes
 
 - **SC-001**: Developers can configure AI agent ignore patterns and have them recognized by the extension without errors
 - **SC-002**: Visual indicators for AI-ignored files are visible in VS Code file explorer within 100ms of file tree rendering
 - **SC-003**: Ignore status queries return results in under 50ms for individual file checks (even with 1000+ patterns)
-- **SC-004**: 95% of AI agent ignore patterns match their intended targets correctly
+- **SC-004**: 100% of the published conformance fixture corpus passes (fixtures cover positive/negation patterns, deep nesting, overrides, and symlink entries without traversal)
 - **SC-005**: Extension initialization time increases by less than 200ms when AI ignore support is enabled
 - **SC-006**: Users can distinguish between regular ignores and AI-specific ignores through UI indicators or tooltips
 
 ## Assumptions
 
-- AI agents referenced in this feature include: GitHub Copilot, ChatGPT (via OpenAI API), Claude, and similar AI coding assistants
+- AI agents referenced in Phase 1 include: Claude (Anthropic), GitHub Copilot (Microsoft), OpenAI Codex, and Google Gemini; additional agents can be added in Phase 2
 - This feature extends and integrates with the ignore configuration system established in feature 001-ignore-visibility-config
 - Primary configuration is stored in VS Code workspace settings (`.vscode/settings.json`), with additional patterns detected from agent-specific config files
-- Agent-specific configuration files include: `.claude/settings.json`, GitHub Copilot settings, and other standard AI agent ignore formats (requires research to identify all formats)
+- Phase 1 supported local agent configuration sources for import: Claude Code `.claude/settings.json` (permission deny `Read(...)`) and Gemini Code Assist `.aiexclude` (gitignore-style); Copilot content exclusion is configured remotely (GitHub settings) and Codex does not document a per-file ignore mechanism
 - The initial implementation uses glob pattern matching compatible with gitignore syntax but maintains independent evaluation from gitignore
 - The feature complements existing gitignore functionality rather than replacing it
 - Performance targets assume modern hardware (2+ GHz processor) with typical project sizes (under 100k files)
@@ -137,6 +141,13 @@ A developer using VS Code extensions (including AI assistants integrated as exte
 - Q: Conflict resolution strategy: When AI ignore patterns conflict with gitignore rules, which takes precedence? → A: Independent evaluation - AI ignore rules are completely separate from gitignore with no precedence relationship
 - Q: Scope of integration with existing ignore system: How should this feature relate to feature 001's ignore configuration system? → A: Extend existing system - integrate with feature 001's ignore framework and add AI type to the existing model
 
+### Session 2026-01-05
+
+- Q: Which AI agent configuration formats should Phase 1 implement? → A: Claude Code (`.claude/settings.json` using `permissions.deny Read(...)`) and Gemini Code Assist (`.aiexclude`) + VS Code workspace settings; Copilot content exclusion is remote and not a repo ignore file; Codex does not document per-file ignore
+- Q: Where should users see error messages for invalid AI ignore patterns? → A: VS Code notification popups (when config loads/changes) + JSON schema validation in settings editor (static checks in `.vscode/settings.json`)
+- Q: How should AI ignore badge decorations be rendered in the file explorer without conflicts? → A: Separate file decoration layer with custom badge icon overlaid on native file icon (no color tinting; dedicated visual layer)
+- Q: How should tests be distributed between unit and integration coverage? → A: Unit tests for validation/matching logic (~70% coverage); integration tests for command API and multi-source aggregation flows (~60% coverage); UI tests for decoration rendering only
+
 ## Open Questions
 
-[To be addressed during clarification phase]
+[All critical ambiguities resolved. Ready for task generation phase.]

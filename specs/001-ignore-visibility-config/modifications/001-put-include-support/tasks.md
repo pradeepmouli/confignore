@@ -183,6 +183,7 @@
 ## Dependencies
 
 **Task Dependencies** (cannot parallelize):
+
 - T006-T009 depend on T003 (need flag reader utility)
 - T010-T011 depend on T005 (need context key defined)
 - T012-T014 depend on T003 (need flag reader utility)
@@ -192,6 +193,7 @@
 - T040-T044 should run after all implementation and tests complete
 
 **Parallel Execution Opportunities**:
+
 - Phase 2 tasks (T003, T004, T005) can start in parallel
 - Phase 8 tests (T022-T027) can run in parallel
 - Phase 9 tests (T028-T032) can run in parallel
@@ -202,6 +204,7 @@
 ## Implementation Strategy
 
 **Recommended Order**:
+
 1. **Setup** (Phase 1): T001-T002 - Get configuration defined
 2. **Infrastructure** (Phase 2): T003-T005 - Core flag reading and context
 3. **Gating** (Phases 3-5): T006-T014 - Implement conditional behavior
@@ -213,7 +216,8 @@
 
 **MVP Scope**: Phases 1-5 + T018-T020 (documentation) deliver core functionality
 
-**Estimated Effort**: 
+**Estimated Effort**:
+
 - Implementation: ~4-6 hours (Phases 1-7)
 - Testing: ~3-4 hours (Phases 8-11)
 - Quality & Verification: ~1-2 hours (Phases 12-13)

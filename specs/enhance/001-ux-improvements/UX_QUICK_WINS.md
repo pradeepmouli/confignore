@@ -5,6 +5,7 @@
 These are high-impact, relatively easy-to-implement enhancements that will significantly improve user experience:
 
 ### 1. Enhanced Status Messages with Actions (30 min)
+
 ```typescript
 // Instead of simple status bar message:
 vscode.window.showInformationMessage(
@@ -25,6 +26,7 @@ vscode.window.showInformationMessage(
 ---
 
 ### 2. Duplicate Pattern Detection (1 hour)
+
 ```typescript
 function normalizePattern(pattern: string): string {
   return pattern
@@ -44,6 +46,7 @@ async function checkDuplicates(newPattern: string, existing: string[]): Promise<
 ---
 
 ### 3. Debounce State Updates (20 min)
+
 ```typescript
 let updateTimeout: NodeJS.Timeout | undefined;
 vscode.workspace.onDidChangeTextDocument((e) => {
@@ -62,6 +65,7 @@ vscode.workspace.onDidChangeTextDocument((e) => {
 ---
 
 ### 4. Better Error Messages (30 min)
+
 Replace technical errors with user-friendly messages:
 
 ```typescript
@@ -87,6 +91,7 @@ function getFriendlyErrorMessage(error: unknown, file: string): string {
 ---
 
 ### 5. Mixed-State Confirmation (30 min)
+
 ```typescript
 async function confirmMixedStateOperation(
   excludedCount: number,
@@ -108,6 +113,7 @@ async function confirmMixedStateOperation(
 ---
 
 ### 6. Add Icons to Quick Pick (15 min)
+
 ```typescript
 const items = (Object.keys(IGNORE_MAP) as IgnoreKey[])
   .filter(k => states[k])
@@ -137,6 +143,7 @@ function getFileDescription(key: IgnoreKey): string {
 ---
 
 ### 7. First-Run Welcome Message (20 min)
+
 ```typescript
 export function activate(context: vscode.ExtensionContext) {
   // ... existing code ...
@@ -162,6 +169,7 @@ export function activate(context: vscode.ExtensionContext) {
 ---
 
 ### 8. Add Submenu Icon (5 min)
+
 ```json
 {
   "submenus": [
@@ -178,6 +186,7 @@ export function activate(context: vscode.ExtensionContext) {
 ---
 
 ### 9. Improved Output Channel Logging (30 min)
+
 ```typescript
 enum LogLevel {
   INFO = 'INFO',
@@ -210,6 +219,7 @@ log(LogLevel.WARNING, `File 'dist/' already excluded by tsconfig.json`, channel)
 ### 10. Add Configuration Setting for Default Ignore File (30 min)
 
 **package.json**:
+
 ```json
 {
   "configuration": {
@@ -232,6 +242,7 @@ log(LogLevel.WARNING, `File 'dist/' already excluded by tsconfig.json`, channel)
 ```
 
 **Usage**:
+
 ```typescript
 const config = vscode.workspace.getConfiguration('confignore');
 const defaultIgnore = config.get<string>('defaultIgnoreFile', 'git');
@@ -245,23 +256,26 @@ const confirmMixed = config.get<boolean>('confirmMixedState', true);
 ## Implementation Order
 
 ### Week 1 - Low-Hanging Fruit
+
 1. Add submenu icon (5 min)
 2. Debounce state updates (20 min)
 3. First-run welcome (20 min)
 4. Better error messages (30 min)
-**Total: ~1.5 hours**
+   **Total: ~1.5 hours**
 
 ### Week 2 - Enhanced Feedback
+
 1. Icons in quick pick (15 min)
 2. Enhanced status messages (30 min)
 3. Improved logging (30 min)
 4. Mixed-state confirmation (30 min)
-**Total: ~2 hours**
+   **Total: ~2 hours**
 
 ### Week 3 - Quality & Configuration
+
 1. Duplicate detection (1 hour)
 2. Configuration settings (30 min)
-**Total: ~1.5 hours**
+   **Total: ~1.5 hours**
 
 ---
 
@@ -285,6 +299,7 @@ After implementing each improvement:
 ## Measuring Success
 
 Track these metrics before and after:
+
 - Average time to complete ignore operation
 - Number of undo/error operations
 - User feedback/ratings on marketplace
@@ -293,6 +308,7 @@ Track these metrics before and after:
 ---
 
 ## Total Time Investment
+
 **~5 hours** for all 10 quick wins
 
 These improvements will make Confignore feel more polished, professional, and user-friendly with minimal development time.

@@ -15,19 +15,23 @@ This document specifies the public command API exposed by Confignore for other e
 **Purpose**: Determine whether a file is ignored for AI agents
 
 **Signature**:
+
 ```typescript
 confignore.isIgnoredForAI(fileUri: Uri): Promise<boolean>
 ```
 
 **Parameters**:
+
 - `fileUri` (Uri): Absolute file path to check
 
 **Returns**:
+
 - `Promise<boolean>`:
   - `true` if file matches any AI ignore pattern
   - `false` if file is not ignored
 
 **Throws**:
+
 - `Error` if fileUri is invalid or workspace not accessible
 
 ---
@@ -93,16 +97,19 @@ const result = await vscode.commands.executeCommand(
 **Purpose**: Open the AI ignore settings editor
 
 **Signature**:
+
 ```typescript
 confignore.openAiIgnoreSettings(): Promise<void>
 ```
 
 **Behavior**:
+
 1. Opens `.vscode/settings.json` or creates it
 2. Positions cursor at `confignore.aiIgnore` array
 3. Provides snippet/IntelliSense for common patterns
 
 **Example Usage**:
+
 ```typescript
 // User clicks "Configure AI Ignore" in UI
 await vscode.commands.executeCommand('confignore.openAiIgnoreSettings');
@@ -115,18 +122,21 @@ await vscode.commands.executeCommand('confignore.openAiIgnoreSettings');
 **Purpose**: Manually reload AI ignore configuration (normally automatic)
 
 **Signature**:
+
 ```typescript
 confignore.reloadAiIgnoreConfig(): Promise<void>
 ```
 
 **Behavior**:
+
 1. Re-reads `.vscode/settings.json`
-2. Re-detects agent config files (`.claude/settings.json`, etc.)
+2. Re-detects supported agent config files (`.claude/settings.json`, `.aiexclude`)
 3. Invalidates cache
 4. Updates file decorations
 5. Returns when complete
 
 **Example Usage**:
+
 ```typescript
 // After user manually edits config file
 // (normally not needed; auto-reloading on file save)
@@ -140,11 +150,13 @@ await vscode.commands.executeCommand('confignore.reloadAiIgnoreConfig');
 **Purpose**: Display AI ignore status for currently selected file
 
 **Signature**:
+
 ```typescript
 confignore.showAiIgnoreStatus(): Promise<void>
 ```
 
 **Behavior**:
+
 1. Gets currently selected file in editor
 2. Evaluates AI ignore status
 3. Shows information message with:
@@ -154,6 +166,7 @@ confignore.showAiIgnoreStatus(): Promise<void>
    - Source of patterns
 
 **Example Output**:
+
 ```
 File: src/secrets.json
 Status: Ignored for AI agents
@@ -176,11 +189,13 @@ Context keys enable menu/keybinding visibility and programmatic queries.
 **Type**: `boolean`
 
 **Value**:
+
 - `true` if currently selected file is ignored for AI
 - `false` if file is not ignored
 - `undefined` if no file selected
 
 **Usage in `package.json`**:
+
 ```json
 {
   "menus": {
@@ -202,10 +217,12 @@ Context keys enable menu/keybinding visibility and programmatic queries.
 **Type**: `boolean`
 
 **Value**:
+
 - `true` if any AI ignore patterns exist (workspace + agent configs)
 - `false` if no patterns configured
 
 **Usage in `package.json`**:
+
 ```json
 {
   "menus": {
@@ -228,6 +245,7 @@ Context keys enable menu/keybinding visibility and programmatic queries.
 **Scenario**: Extension calls `confignore.isIgnoredForAI` but Confignore extension is not active
 
 **Behavior**:
+
 ```typescript
 try {
   const isIgnored = await vscode.commands.executeCommand(
@@ -249,6 +267,7 @@ try {
 **Scenario**: Extension passes invalid or non-existent file URI
 
 **Behavior**:
+
 1. Command logs warning: "Invalid file URI: {uri}"
 2. Returns `false` (file not ignored)
 3. No exception thrown (graceful degradation)
@@ -258,6 +277,7 @@ try {
 **Scenario**: Command executed when no workspace is open
 
 **Behavior**:
+
 1. Returns `false` (file not ignored)
 2. Logs: "No workspace open; AI ignore not available"
 
@@ -267,13 +287,13 @@ try {
 
 ### Command Latency
 
-| Scenario | Latency | Notes |
-|----------|---------|-------|
-| Cache hit | <0.1ms | File pattern cached |
-| Cache miss (small project) | <1ms | < 100 files |
-| Cache miss (medium project) | 5–10ms | 100–1k files |
-| Cache miss (large project) | 20–50ms | 1k–10k files |
-| Config parse (on reload) | 10–50ms | Depends on config file size |
+| Scenario                    | Latency | Notes                       |
+| --------------------------- | ------- | --------------------------- |
+| Cache hit                   | <0.1ms  | File pattern cached         |
+| Cache miss (small project)  | <1ms    | < 100 files                 |
+| Cache miss (medium project) | 5–10ms  | 100–1k files                |
+| Cache miss (large project)  | 20–50ms | 1k–10k files                |
+| Config parse (on reload)    | 10–50ms | Depends on config file size |
 
 **Target**: <50ms for 99th percentile (SC-003)
 
@@ -302,11 +322,13 @@ const ignored = await Promise.all(
 Commands are available after these events:
 
 **Activation Triggers**:
+
 - `onStartupFinished` — Confignore activates automatically on VS Code startup
 - `onWorkspaceContains:.vscode/settings.json` — If workspace settings exist
 - `onCommand:confignore.*` — Lazy activation on command invocation
 
 **Command Availability**:
+
 - All commands available within 100ms of VS Code startup
 - No manual activation required
 
@@ -315,11 +337,13 @@ Commands are available after these events:
 ## Backward Compatibility
 
 **Version 1.0** (Current):
+
 - `confignore.isIgnoredForAI(fileUri)` — Core query command
 - Context keys for UI menus
 - Helper commands for settings/reload
 
 **Future Versions**:
+
 - `confignore.isIgnoredForAI:verbose` — Return detailed reason
 - `confignore.bulkCheckIgnored` — Batch query for multiple files
 - Webhooks for real-time ignore status updates
@@ -407,6 +431,7 @@ describe('confignore.isIgnoredForAI integration', () => {
 If your extension currently checks gitignore status, you can now also check AI ignore:
 
 **Before** (only git-aware):
+
 ```typescript
 const gitIgnored = await resolveState(file);
 if (gitIgnored.excluded) {
@@ -415,6 +440,7 @@ if (gitIgnored.excluded) {
 ```
 
 **After** (git + AI-aware):
+
 ```typescript
 const gitIgnored = await resolveState(file);
 const aiIgnored = await vscode.commands.executeCommand(

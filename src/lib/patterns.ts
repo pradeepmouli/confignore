@@ -9,19 +9,22 @@ import { Uri, workspace, WorkspaceFolder } from 'vscode';
  * Get workspace folder for a given URI
  */
 export function getWorkspaceFolder(uri: Uri): WorkspaceFolder | undefined {
-	return workspace.getWorkspaceFolder(uri);
+  return workspace.getWorkspaceFolder(uri);
 }
 
 /**
  * Get workspace-relative path for a URI
  * Returns undefined if URI is not within any workspace folder
  */
-export function getWorkspaceRelativePath(uri: Uri, workspaceFolder?: WorkspaceFolder): string | undefined {
-	const folder = workspaceFolder ?? getWorkspaceFolder(uri);
-	if (!folder) {
-		return undefined;
-	}
-	return path.relative(folder.uri.fsPath, uri.fsPath);
+export function getWorkspaceRelativePath(
+  uri: Uri,
+  workspaceFolder?: WorkspaceFolder
+): string | undefined {
+  const folder = workspaceFolder ?? getWorkspaceFolder(uri);
+  if (!folder) {
+    return undefined;
+  }
+  return path.relative(folder.uri.fsPath, uri.fsPath);
 }
 
 /**
@@ -29,18 +32,21 @@ export function getWorkspaceRelativePath(uri: Uri, workspaceFolder?: WorkspaceFo
  * Converts backslashes to forward slashes, removes leading ./
  */
 export function normalizePath(p: string): string {
-	return p.replace(/\\/g, '/').replace(/^\.\//, '');
+  return p.replace(/\\/g, '/').replace(/^\.\//, '');
 }
 
 /**
  * Convert URI to normalized workspace-relative path suitable for ignore patterns
  */
-export function uriToIgnorePattern(uri: Uri, workspaceFolder?: WorkspaceFolder): string | undefined {
-	const relativePath = getWorkspaceRelativePath(uri, workspaceFolder);
-	if (!relativePath) {
-		return undefined;
-	}
-	return normalizePath(relativePath);
+export function uriToIgnorePattern(
+  uri: Uri,
+  workspaceFolder?: WorkspaceFolder
+): string | undefined {
+  const relativePath = getWorkspaceRelativePath(uri, workspaceFolder);
+  if (!relativePath) {
+    return undefined;
+  }
+  return normalizePath(relativePath);
 }
 
 /**
@@ -49,33 +55,33 @@ export function uriToIgnorePattern(uri: Uri, workspaceFolder?: WorkspaceFolder):
  * Handles negation patterns (starting with !)
  */
 export function matchPattern(filePath: string, pattern: string): boolean {
-	const normalizedPath = normalizePath(filePath);
-	const normalizedPattern = normalizePath(pattern);
+  const normalizedPath = normalizePath(filePath);
+  const normalizedPattern = normalizePath(pattern);
 
-	// Handle negation patterns
-	if (normalizedPattern.startsWith('!')) {
-		return !matchPattern(normalizedPath, normalizedPattern.slice(1));
-	}
+  // Handle negation patterns
+  if (normalizedPattern.startsWith('!')) {
+    return !matchPattern(normalizedPath, normalizedPattern.slice(1));
+  }
 
-	// Convert glob pattern to regex
-	const regexPattern = normalizedPattern
-		.replace(/\./g, '\\.') // Escape dots
-		.replace(/\*\*/g, '___DOUBLESTAR___') // Placeholder for **
-		.replace(/\*/g, '[^/]*') // * matches within a segment
-		.replace(/___DOUBLESTAR___/g, '.*') // ** matches any path segment
-		.replace(/\?/g, '.'); // ? matches single char
+  // Convert glob pattern to regex
+  const regexPattern = normalizedPattern
+    .replace(/\./g, '\\.') // Escape dots
+    .replace(/\*\*/g, '___DOUBLESTAR___') // Placeholder for **
+    .replace(/\*/g, '[^/]*') // * matches within a segment
+    .replace(/___DOUBLESTAR___/g, '.*') // ** matches any path segment
+    .replace(/\?/g, '.'); // ? matches single char
 
-	const regex = new RegExp(`^${regexPattern}$`);
-	const exactMatch = regex.test(normalizedPath);
+  const regex = new RegExp(`^${regexPattern}$`);
+  const exactMatch = regex.test(normalizedPath);
 
-	// Also check if pattern matches parent directory (for nested exclusions)
-	// e.g., "dist/**" should match "dist/foo/bar.js"
-	if (!exactMatch && normalizedPattern.includes('**')) {
-		const parentPattern = normalizedPattern.replace(/\/?\*\*\/?\*?$/, '');
-		if (parentPattern && normalizedPath.startsWith(parentPattern + '/')) {
-			return true;
-		}
-	}
+  // Also check if pattern matches parent directory (for nested exclusions)
+  // e.g., "dist/**" should match "dist/foo/bar.js"
+  if (!exactMatch && normalizedPattern.includes('**')) {
+    const parentPattern = normalizedPattern.replace(/\/?\*\*\/?\*?$/, '');
+    if (parentPattern && normalizedPath.startsWith(parentPattern + '/')) {
+      return true;
+    }
+  }
 
-	return exactMatch;
+  return exactMatch;
 }

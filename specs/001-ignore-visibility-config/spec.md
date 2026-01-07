@@ -3,9 +3,9 @@
 **Feature Branch**: `001-ignore-visibility-config`
 **Created**: 2025-11-04
 **Status**: Draft
-**Input**: User description: "Add following features:  1. Detect if selection is already ignored and a. hide relevant ignore commands and b. show relevant include commands 2. Support updating config files when inclusion/exclusions are not done through ignore files (e.g. tsconfig.json, pretter.config.ts, etc...)."
+**Input**: User description: "Add following features: 1. Detect if selection is already ignored and a. hide relevant ignore commands and b. show relevant include commands 2. Support updating config files when inclusion/exclusions are not done through ignore files (e.g. tsconfig.json, pretter.config.ts, etc...)."
 
-## User Scenarios & Testing *(mandatory)*
+## User Scenarios & Testing _(mandatory)_
 
 ### User Story 1 - Hide/Show correct menu actions (Priority: P1)
 
@@ -56,7 +56,7 @@ For ecosystems where inclusion/exclusion is configured in project configuration 
 - Config file exists but is malformed; the user should receive a clear, actionable message and no changes should be applied.
 - Multi-selection with mixed states; the menu should handle mixed states (e.g., enable actions that apply to all or indicate mixed selection).
 
-## Requirements *(mandatory)*
+## Requirements _(mandatory)_
 
 ### Functional Requirements
 
@@ -70,15 +70,15 @@ For ecosystems where inclusion/exclusion is configured in project configuration 
 - **FR-008**: The system SHOULD support undo for the last include/exclude change via standard editor history or an explicit "Revert" action, where feasible.
 - **FR-009**: The system MUST respect workspace trust/security model—never modifies files outside the workspace and only updates files under version control when the user initiates an action.
 - **FR-010**: The system MUST document that v1 supports config-based updates for: TypeScript (tsconfig include/exclude), Prettier (relevant include/exclude or ignore settings), and ESLint (ignore patterns/overrides), and how the chosen precedence is determined.
- - **FR-011**: The system MUST NOT auto-create missing configuration files; if a target config is absent, the action is not offered and the user is informed.
+- **FR-011**: The system MUST NOT auto-create missing configuration files; if a target config is absent, the action is not offered and the user is informed.
 
-### Key Entities *(include if feature involves data)*
+### Key Entities _(include if feature involves data)_
 
 - **Selection**: The file or folder path(s) chosen by the user; used to compute effective inclusion/exclusion and to scope updates.
 - **Ignore Source**: Any rule set that can exclude or include paths (e.g., ignore files, workspace settings, or supported config files). Attributes: source type, location, effective rules.
 - **Config Target**: A project configuration file that controls include/exclude behavior for a toolchain. Attributes: location, supported sections/keys, precedence.
 
-## Success Criteria *(mandatory)*
+## Success Criteria _(mandatory)_
 
 ### Measurable Outcomes
 

@@ -5,12 +5,14 @@ This repository uses GitHub Actions for CI/CD automation.
 ## Workflows
 
 ### 1. CI (`.github/workflows/ci.yml`)
+
 **Trigger:** Push to any branch or pull request
 **Purpose:** Runs build, type-check, lint, and tests
 
 **Matrix:** Node.js 20.x and 22.x
 
 **Steps:**
+
 - Checkout code
 - Install dependencies
 - Run type checking (`npm run check-types`)
@@ -19,10 +21,12 @@ This repository uses GitHub Actions for CI/CD automation.
 - Run tests (`npm test`)
 
 ### 2. Release (`.github/workflows/release.yml`)
+
 **Trigger:** Pushed version tags (`v*.*.*`)
 **Purpose:** Creates GitHub releases with packaged extension
 
 **Steps:**
+
 - Checkout code
 - Build extension
 - Package as `.vsix` using `@vscode/vsce`
@@ -30,10 +34,12 @@ This repository uses GitHub Actions for CI/CD automation.
 - Create GitHub release with `.vsix` artifact
 
 ### 3. Publish (`.github/workflows/publish.yml`)
+
 **Trigger:** GitHub release published
 **Purpose:** Publishes extension to VS Code Marketplace and Open VSX Registry
 
 **Steps:**
+
 - Checkout code
 - Build extension
 - Publish to VS Code Marketplace using `VSCE_PAT`
@@ -44,9 +50,11 @@ This repository uses GitHub Actions for CI/CD automation.
 Configure these secrets in your repository settings (Settings → Secrets and variables → Actions):
 
 ### `VSCE_PAT` (Required)
+
 **Purpose:** Publish to VS Code Marketplace
 
 **Setup:**
+
 1. Go to https://dev.azure.com/[your-org]/_usersSettings/tokens
 2. Create a new Personal Access Token with:
    - **Organization:** All accessible organizations
@@ -59,9 +67,11 @@ Configure these secrets in your repository settings (Settings → Secrets and va
 **Reference:** https://code.visualstudio.com/api/working-with-extensions/publishing-extension#get-a-personal-access-token
 
 ### `OVSX_PAT` (Optional)
+
 **Purpose:** Publish to Open VSX Registry (for VS Codium, Eclipse Che, etc.)
 
 **Setup:**
+
 1. Create account at https://open-vsx.org/
 2. Generate access token at https://open-vsx.org/user-settings/tokens
 3. Add to GitHub repo: Settings → Secrets → New repository secret
@@ -75,6 +85,7 @@ Configure these secrets in your repository settings (Settings → Secrets and va
 ### Creating a Release
 
 1. **Update version** in `package.json`:
+
    ```bash
    npm version patch  # or minor, major
    ```
@@ -82,12 +93,14 @@ Configure these secrets in your repository settings (Settings → Secrets and va
 2. **Update CHANGELOG.md** with release notes
 
 3. **Commit changes**:
+
    ```bash
    git add package.json CHANGELOG.md
    git commit -m "chore: bump version to X.Y.Z"
    ```
 
 4. **Push with tags**:
+
    ```bash
    git push origin main --follow-tags
    ```
@@ -110,6 +123,7 @@ npm run vsce:publish
 ```
 
 **Note:** Manual publishing requires `VSCE_PAT` environment variable:
+
 ```bash
 export VSCE_PAT=your-token-here
 npm run vsce:publish
@@ -118,15 +132,18 @@ npm run vsce:publish
 ## Troubleshooting
 
 ### Publishing fails with "Authentication failed"
+
 - Verify `VSCE_PAT` secret is correctly set in GitHub repo settings
 - Check token hasn't expired (Azure DevOps tokens expire after 1 year by default)
 - Ensure token has "Marketplace (Manage)" scope
 
 ### Release workflow doesn't trigger
+
 - Ensure tag follows `v*.*.*` format (e.g., `v0.0.3`)
 - Push tags with `git push --follow-tags` or `git push origin v0.0.3`
 
 ### VSIX file missing from release
+
 - Check release workflow logs in Actions tab
 - Ensure build completes successfully before packaging
 

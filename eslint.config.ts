@@ -1,27 +1,31 @@
-import typescriptEslint from "@typescript-eslint/eslint-plugin";
-import tsParser from "@typescript-eslint/parser";
-import type { Linter } from "eslint";
+import typescriptEslint from '@typescript-eslint/eslint-plugin';
+import tsParser from '@typescript-eslint/parser';
+import type { Linter } from 'eslint';
 
-export default [{
-
-	files: ["src/**/*.ts", "src/**/*.tsx"],
-	ignores: ["*.md"],
+export default [
+  {
+    files: ['src/**/*.ts', 'src/**/*.tsx'],
+    ignores: ['*.md'],
     plugins: {
-        "@typescript-eslint": typescriptEslint,
+      '@typescript-eslint': typescriptEslint
     },
     languageOptions: {
-        parser: tsParser,
-        ecmaVersion: 2022,
-        sourceType: "module",
+      parser: tsParser,
+      ecmaVersion: 2022,
+      sourceType: 'module'
     },
     rules: {
-        "@typescript-eslint/naming-convention": ["warn", {
-            selector: "import",
-            format: ["camelCase", "PascalCase"],
-        }],
-        curly: "warn",
-        eqeqeq: "warn",
-        "no-throw-literal": "warn",
-        semi: "warn",
-    },
-}] satisfies Linter.Config[];
+      '@typescript-eslint/naming-convention': [
+        'warn',
+        {
+          selector: 'import',
+          format: ['camelCase', 'PascalCase']
+        }
+      ],
+      curly: 'warn',
+      eqeqeq: 'warn',
+      'no-throw-literal': 'warn',
+      semi: 'warn'
+    }
+  }
+] satisfies Linter.Config[];

@@ -24,6 +24,7 @@ Incorporate external documents (specs, plans, research, checklists, etc.) into e
 ```
 
 **Options:**
+
 - `--type TYPE` - Force document type (spec|plan|tasks|research|checklist|postmortem)
 - `--workflow WORKFLOW` - Initiate specific workflow if not in one (baseline|bugfix|enhance|modify|refactor|hotfix|deprecate|cleanup)
 - `--stage STAGE` - Target stage (auto|current|spec|plan|tasks)
@@ -43,6 +44,7 @@ get_feature_paths
 ```
 
 This provides:
+
 - `CURRENT_BRANCH` - Current git branch
 - `FEATURE_DIR` - Feature directory path (if in workflow)
 - `FEATURE_SPEC` - Main specification file
@@ -50,6 +52,7 @@ This provides:
 - `TASKS` - Task list file
 
 **Determine workflow stage:**
+
 - If `FEATURE_DIR` not found → Not in workflow
 - If only spec exists → Spec stage
 - If spec + plan exist → Planning stage
@@ -64,6 +67,7 @@ Use native spec-kit analyze to understand the document:
 ```
 
 **From the analysis, identify:**
+
 1. **Document Type** - What kind of document is this?
    - **Spec/Requirements** - Goals, acceptance criteria, architecture
    - **Plan/Approach** - Implementation steps, technical decisions
@@ -79,6 +83,7 @@ Use native spec-kit analyze to understand the document:
 4. **Conflicts** - Does it contradict existing workflow docs?
 
 **Detection Patterns:**
+
 - **Spec indicators**: "Requirements", "Goals", "Acceptance Criteria", "Architecture", "User Stories"
 - **Plan indicators**: "Implementation", "Approach", "Technical Design", "Steps", "Strategy"
 - **Tasks indicators**: Checkbox lists, numbered action items, "TODO", "Task", specific assignments
@@ -103,6 +108,7 @@ Based on workflow context and document type, choose strategy:
    - Otherwise → Ask user for workflow type
 
 2. Execute appropriate workflow creation script:
+
    ```bash
    # For bugfix example:
    .specify/scripts/bash/create-bugfix.sh "Description from document title"
@@ -131,6 +137,7 @@ EOF
 **Action: Advance to Next Stage**
 
 **C1: Have spec, document is plan**
+
 ```bash
 # Use native spec-kit plan command with document as context
 /speckit.plan
@@ -140,6 +147,7 @@ EOF
 ```
 
 **C2: Have spec + plan, document is tasks**
+
 ```bash
 # Use native spec-kit tasks command with document as context
 /speckit.tasks
@@ -154,6 +162,7 @@ EOF
 **Example: Have spec only, document is tasks**
 
 1. First, create minimal plan:
+
    ```bash
    /speckit.plan
    # Agent creates basic plan to bridge the gap
@@ -198,6 +207,7 @@ echo "  3. Mark as NEEDS RECONCILIATION (both present)"
 ### 4.2 Detect Duplicates
 
 If analyze indicates overlapping content:
+
 - Skip truly duplicate content
 - Merge complementary information
 - Note: "Incorporated X from document, skipped Y (already covered)"
@@ -205,6 +215,7 @@ If analyze indicates overlapping content:
 ### 4.3 Structure Content
 
 When adding to existing docs:
+
 - Maintain document structure (use existing headers)
 - Add new sections if needed
 - Preserve formatting consistency
@@ -213,6 +224,7 @@ When adding to existing docs:
 ### 4.4 Preserve Git History
 
 Before making changes:
+
 ```bash
 # Ensure changes are trackable
 git diff --exit-code || echo "Uncommitted changes exist"
@@ -230,7 +242,7 @@ Actions taken:
   • Current workflow: bugfix/001-login-error
   • Current stage: Spec
   • Action: Enriched bug-report.md with research findings
-  
+
 Added sections:
   - Background on authentication flow
   - API documentation excerpts
@@ -316,26 +328,28 @@ Suggested: Review the enriched spec, then run /speckit.plan to continue.
 
 # Result:
 # 🔍 Dry Run - No changes will be made
-# 
+#
 # Would perform:
 #   • Document type: Research
 #   • Current stage: Spec (bug-report.md)
 #   • Action: Enrich bug-report.md
 #   • New section: "Background Research"
 #   • Lines to add: ~45 lines
-#   
+#
 # To execute: /speckit.incorporate research.md
 ```
 
 ## Error Handling
 
 ### Document Not Found
+
 ```
 ❌ Error: Document not found: nonexistent.md
 Please check the path and try again.
 ```
 
 ### Cannot Determine Workflow Type
+
 ```
 ❌ Cannot determine appropriate workflow type from document.
 Please specify: /speckit.incorporate document.md --workflow [type]
@@ -345,6 +359,7 @@ Available workflows:
 ```
 
 ### Conflicts Detected
+
 ```
 ⚠️  Conflicts detected - user input required
 Cannot auto-merge due to contradictions.

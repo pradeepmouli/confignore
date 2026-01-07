@@ -51,14 +51,13 @@ diagnostics.
 
 - **Language/Runtime**: TypeScript 5.9+ (strict mode), ES2022 target, Node16+ module resolution, VS Code engine 1.105.0+; esbuild 0.25+ for bundling
 - **Tooling**:
-  - **Linting**: ESLint 9.39+ with @typescript-eslint (8.51+) using flat config format
+  - **Linting**: oxlint 1.36+ (exclusive linter for JavaScript/TypeScript code quality)
   - **Formatting**: oxfmt 0.21+ for multi-language formatting (TS, JSON, TOML, etc.)
-  - **Advanced Linting**: oxlint 1.36+ as supplementary linter for additional rule coverage beyond ESLint
   - **Package Manager**: pnpm for dependency management (lock file: pnpm-lock.yaml)
   - **Testing**: @vscode/test-electron 2.5+ for VS Code extension testing; @vscode/test-cli 0.0+ for CLI test execution; mocha 10+ test framework
   - **Type Checking**: TypeScript 5.9+ compiler (tsc --noEmit for CI validation)
 - **Coding Standards**:
-  - ESLint rules enforced; formatting via oxfmt + oxlint consistency checks
+  - oxlint rules enforced; formatting via oxfmt consistency checks
   - No warnings for new/changed code without explicit documented exceptions
   - Type Safety: TypeScript strict mode MUST be maintained; minimal type errors allowed only with // @ts-expect-error comments with justification
 - **Security**:
@@ -112,12 +111,14 @@ The wrong workflow SHALL NOT be used - features must not bypass specification, b
 ### Quality Gates by Workflow Type
 
 **Baseline** (`/speckit.baseline`):
+
 - Comprehensive project analysis MUST be performed
 - All major components MUST be documented in baseline-spec.md
 - Current state MUST enumerate all changes by workflow type
 - Architecture and technology stack MUST be accurately captured
 
 **Feature Development** (`/specify`):
+
 - Specification MUST be complete before planning
 - Plan MUST pass constitution checks before task generation
 - Tests MUST be written before implementation (TDD)
@@ -128,6 +129,7 @@ The wrong workflow SHALL NOT be used - features must not bypass specification, b
 - Minimal tests pass for new/changed public behaviors
 
 **Bugfix** (`/speckit.bugfix`):
+
 - Bug reproduction MUST be documented with exact steps
 - Regression test MUST be written before fix is applied
 - Root cause MUST be identified and documented
@@ -135,6 +137,7 @@ The wrong workflow SHALL NOT be used - features must not bypass specification, b
 - All standard quality gates apply (typecheck, lint, build, tests)
 
 **Enhancement** (`/speckit.enhance`):
+
 - Enhancement MUST be scoped to a single-phase plan with no more than 7 tasks
 - Changes MUST be clearly defined in the enhancement document
 - Tests MUST be added for new behavior
@@ -142,6 +145,7 @@ The wrong workflow SHALL NOT be used - features must not bypass specification, b
 - All standard quality gates apply (typecheck, lint, build, tests)
 
 **Modification** (`/speckit.modify`):
+
 - Impact analysis MUST identify all affected files and contracts
 - Original feature spec MUST be linked
 - Backward compatibility MUST be assessed
@@ -149,6 +153,7 @@ The wrong workflow SHALL NOT be used - features must not bypass specification, b
 - All standard quality gates apply (typecheck, lint, build, tests)
 
 **Refactor** (`/speckit.refactor`):
+
 - Baseline metrics MUST be captured before any changes unless explicitly exempted
 - Tests MUST pass after EVERY incremental change
 - Behavior preservation MUST be guaranteed (tests unchanged)
@@ -156,6 +161,7 @@ The wrong workflow SHALL NOT be used - features must not bypass specification, b
 - All standard quality gates apply (typecheck, lint, build, tests)
 
 **Hotfix** (`/speckit.hotfix`):
+
 - Severity MUST be assessed (P0/P1/P2)
 - Rollback plan MUST be prepared before deployment
 - Fix MUST be deployed and verified before writing tests (exception to TDD)
@@ -163,6 +169,7 @@ The wrong workflow SHALL NOT be used - features must not bypass specification, b
 - Expedited quality gates: typecheck and build required; tests deferred but required within 48 hours
 
 **Deprecation** (`/speckit.deprecate`):
+
 - Dependency scan MUST be run to identify affected code
 - Migration guide MUST be created before Phase 1
 - All three phases MUST complete in sequence (no skipping)

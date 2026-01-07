@@ -13,11 +13,13 @@ Confignore is a well-designed VS Code extension that streamlines adding files to
 **Issue**: The submenu "Add to Ignore" appears at `navigation@5` position, which may not be immediately discoverable.
 
 **Recommendations**:
+
 - Consider moving to a more prominent group like `7_modification` or creating a dedicated group
 - Add an icon to the submenu for visual recognition (e.g., eye-slash or exclude icon)
 - Consider adding keyboard shortcuts for the most common operations (e.g., `.gitignore`)
 
 **Implementation**:
+
 ```json
 "submenus": [
   {
@@ -33,12 +35,14 @@ Confignore is a well-designed VS Code extension that streamlines adding files to
 **Issue**: The quick pick command shows basic file information but lacks context about what each ignore file does.
 
 **Recommendations**:
+
 - Add detailed descriptions explaining each ignore file's purpose
 - Show which files are already detected (✓ indicator)
 - Add icons for better visual scanning
 - Group by type (Config-based vs File-based)
 
 **Example**:
+
 ```typescript
 const pick = await vscode.window.showQuickPick(items, {
   title: 'Add to Ignore',
@@ -61,11 +65,13 @@ const pick = await vscode.window.showQuickPick(items, {
 **Issue**: When selecting multiple files with mixed exclusion states, the UX doesn't clearly communicate what will happen.
 
 **Recommendations**:
+
 - Show a confirmation dialog for mixed-state operations
 - Display count of files that will be affected
 - Preview which files will be added vs already ignored
 
 **Implementation**:
+
 ```typescript
 // Before executing action
 if (state.mixed) {
@@ -88,12 +94,14 @@ if (state.mixed) {
 **Issue**: Status bar messages disappear after 3 seconds, which may be too fast for users to read and understand.
 
 **Recommendations**:
+
 - Increase duration to 5 seconds for informational messages
 - Use notification toasts for important actions
 - Add clickable status bar item that shows current exclusion state
 - Provide "Undo" option for recent changes
 
 **Implementation**:
+
 ```typescript
 // Add persistent status bar item
 const statusBarItem = vscode.window.createStatusBarItem(
@@ -123,12 +131,14 @@ vscode.window.showInformationMessage(
 **Issue**: Output channel logs are developer-focused, not user-friendly.
 
 **Recommendations**:
+
 - Add user-friendly mode with clear, actionable messages
 - Include timestamps and severity levels
 - Add command to "Show Confignore Logs" in command palette
 - Provide troubleshooting tips in logs
 
 **Example Log Format**:
+
 ```
 [12:34:56] INFO: Detected 5 ignore file types in workspace
 [12:35:01] SUCCESS: Added 'src/temp/' to .gitignore
@@ -141,11 +151,13 @@ vscode.window.showInformationMessage(
 **Issue**: No visual feedback in the Explorer view showing which files are ignored.
 
 **Recommendations**:
+
 - Add file decorations to show ignored status (grayed out or with icon badge)
 - Implement decorator provider for better visual feedback
 - Show different decoration for different ignore sources
 
 **Implementation**:
+
 ```typescript
 const decorationProvider: vscode.FileDecorationProvider = {
   provideFileDecoration(uri: vscode.Uri): vscode.FileDecoration | undefined {
@@ -170,12 +182,14 @@ const decorationProvider: vscode.FileDecorationProvider = {
 **Issue**: No onboarding for first-time users.
 
 **Recommendations**:
+
 - Show welcome message on first activation
 - Offer quick tour of features
 - Link to documentation and common use cases
 - Add "Getting Started" walkthrough
 
 **Implementation**:
+
 ```typescript
 const hasSeenWelcome = context.globalState.get('confignore.hasSeenWelcome');
 if (!hasSeenWelcome) {
@@ -196,12 +210,14 @@ if (!hasSeenWelcome) {
 **Issue**: Commands are not easily discoverable from the command palette.
 
 **Recommendations**:
+
 - Add more descriptive command titles
 - Create "Confignore: Show Ignored Files" command
 - Add "Confignore: Detect Configuration" command
 - Implement "Confignore: Clean Duplicate Entries" command
 
 **Example Commands**:
+
 ```json
 {
   "command": "confignore.showIgnoredFiles",
@@ -220,6 +236,7 @@ if (!hasSeenWelcome) {
 **Issue**: Limited inline help and tooltips.
 
 **Recommendations**:
+
 - Add hover tooltips to submenu items explaining when to use each
 - Include examples in command descriptions
 - Link to specific documentation sections
@@ -236,6 +253,7 @@ if (!hasSeenWelcome) {
 **Improved**: `"Unable to add file to ignore list. The file may have been deleted or moved. Please try again."`
 
 **Recommendations**:
+
 - Provide actionable error messages with suggested fixes
 - Include "Learn More" links to documentation
 - Offer automatic retry for transient errors
@@ -245,11 +263,13 @@ if (!hasSeenWelcome) {
 **Issue**: Extension behavior when no workspace is open is unclear.
 
 **Recommendations**:
+
 - Show friendly message: "Open a workspace to use Confignore"
 - Provide link to open folder
 - Hide all commands when no workspace is available (currently only hides some)
 
 **Implementation**:
+
 ```typescript
 if (folders.length === 0) {
   vscode.window.showInformationMessage(
@@ -269,6 +289,7 @@ if (folders.length === 0) {
 **Issue**: No handling for file system errors (permissions, disk full, etc.).
 
 **Recommendations**:
+
 - Wrap all FS operations in try-catch with specific error handling
 - Provide recovery options (retry, skip, cancel)
 - Log detailed errors to output channel
@@ -280,6 +301,7 @@ if (folders.length === 0) {
 **Example**: `temp/` and `temp` and `./temp/` are all equivalent but may all be added.
 
 **Recommendations**:
+
 - Normalize patterns before comparison
 - Show warning when adding potentially duplicate patterns
 - Offer to clean up duplicates
@@ -294,16 +316,19 @@ if (folders.length === 0) {
 **Issue**: State updates trigger on every text document change, which may be excessive.
 
 **Current**:
+
 ```typescript
 vscode.workspace.onDidChangeTextDocument(() => updateSelection())
 ```
 
 **Recommendations**:
+
 - Debounce updates (wait 500ms after last change)
 - Only update when relevant files change (.gitignore, tsconfig.json, etc.)
 - Use file system watcher for ignore file changes instead of document changes
 
 **Implementation**:
+
 ```typescript
 let updateTimeout: NodeJS.Timeout | undefined;
 vscode.workspace.onDidChangeTextDocument((e) => {
@@ -322,6 +347,7 @@ vscode.workspace.onDidChangeTextDocument((e) => {
 **Issue**: `detectCapabilities()` runs multiple file searches on every activation.
 
 **Recommendations**:
+
 - Cache results and invalidate on workspace changes
 - Use file system watchers for incremental updates
 - Run detection lazily when submenu is opened
@@ -331,6 +357,7 @@ vscode.workspace.onDidChangeTextDocument((e) => {
 **Issue**: Pattern matching may be slow in large workspaces with many ignore files.
 
 **Recommendations**:
+
 - Implement pattern matching cache
 - Limit search depth for ignore files
 - Show progress indicator for long operations
@@ -344,6 +371,7 @@ vscode.workspace.onDidChangeTextDocument((e) => {
 **Issue**: "This extension currently contributes no settings."
 
 **Recommended Settings**:
+
 ```json
 {
   "confignore.autoDetect": {
@@ -386,6 +414,7 @@ vscode.workspace.onDidChangeTextDocument((e) => {
 **Issue**: No default keyboard shortcuts for common operations.
 
 **Recommendations**:
+
 ```json
 {
   "command": "confignore.addToIgnore.git",
@@ -402,6 +431,7 @@ vscode.workspace.onDidChangeTextDocument((e) => {
 ### 7.1 Bulk Operations
 
 **Recommendation**: Add command to "Ignore all files of type..."
+
 - Ignore all `*.log` files
 - Ignore all files in `node_modules`
 - Ignore all untracked files (Git integration)
@@ -409,6 +439,7 @@ vscode.workspace.onDidChangeTextDocument((e) => {
 ### 7.2 Smart Suggestions
 
 **Recommendation**: Analyze workspace and suggest commonly ignored patterns
+
 - Detect build output directories
 - Identify temporary files
 - Suggest based on project type (Node.js, Python, etc.)
@@ -416,6 +447,7 @@ vscode.workspace.onDidChangeTextDocument((e) => {
 ### 7.3 Preview Before Apply
 
 **Recommendation**: Show preview of what will be added
+
 - Diff view showing before/after ignore file
 - Highlight new entries
 - Allow editing before applying
@@ -423,12 +455,14 @@ vscode.workspace.onDidChangeTextDocument((e) => {
 ### 7.4 Sync Across Ignore Files
 
 **Recommendation**: Add "Sync to all ignore files" command
+
 - Add same pattern to multiple ignore files at once
 - Useful for `node_modules`, `dist`, etc.
 
 ### 7.5 Import/Export Ignore Templates
 
 **Recommendation**: Provide common ignore templates
+
 - Node.js project template
 - Python project template
 - VS Code extension template
@@ -441,6 +475,7 @@ vscode.workspace.onDidChangeTextDocument((e) => {
 ### 8.1 Screen Reader Support
 
 **Recommendations**:
+
 - Add aria-labels to menu items
 - Provide detailed announcements for state changes
 - Ensure keyboard navigation works throughout
@@ -448,6 +483,7 @@ vscode.workspace.onDidChangeTextDocument((e) => {
 ### 8.2 Color Contrast
 
 **Recommendations**:
+
 - Test decorations in all VS Code themes
 - Use theme-aware colors for all visual indicators
 - Provide high-contrast alternatives
@@ -461,6 +497,7 @@ vscode.workspace.onDidChangeTextDocument((e) => {
 **Current**: Good but could be enhanced
 
 **Recommendations**:
+
 - Add GIF/video demonstrations of key features
 - Include troubleshooting section
 - Add FAQ for common questions
@@ -469,6 +506,7 @@ vscode.workspace.onDidChangeTextDocument((e) => {
 ### 9.2 In-Extension Help
 
 **Recommendations**:
+
 - Add "Help" command that opens relevant docs
 - Include tooltips with keyboard shortcuts
 - Add "What's New" notification for updates
@@ -476,6 +514,7 @@ vscode.workspace.onDidChangeTextDocument((e) => {
 ### 9.3 Examples & Recipes
 
 **Recommendations**:
+
 - Create cookbook of common scenarios
 - Add "How do I..." guide for typical use cases
 - Include best practices for ignore file management
@@ -487,6 +526,7 @@ vscode.workspace.onDidChangeTextDocument((e) => {
 ### 10.1 Edge Case Coverage
 
 **Scenarios to test**:
+
 - Symlinks and junction points
 - Network drives and remote filesystems
 - Very long file paths
@@ -498,6 +538,7 @@ vscode.workspace.onDidChangeTextDocument((e) => {
 ### 10.2 User Testing
 
 **Recommendations**:
+
 - Conduct usability testing with target users
 - Gather metrics on feature usage
 - Track common error scenarios
@@ -510,6 +551,7 @@ vscode.workspace.onDidChangeTextDocument((e) => {
 ### 11.1 Type Safety
 
 **Issue**: Some uses of `any` could be more specific
+
 - Line 111: `as any` in package.json parsing
 - configTargets.ts has several `as any` casts
 
@@ -520,6 +562,7 @@ vscode.workspace.onDidChangeTextDocument((e) => {
 **Issue**: Inconsistent error handling patterns across modules
 
 **Recommendation**: Create centralized error handling utility
+
 ```typescript
 export async function handleError(error: unknown, context: string): Promise<void> {
   const message = error instanceof Error ? error.message : String(error);
@@ -538,6 +581,7 @@ export async function handleError(error: unknown, context: string): Promise<void
 **Issue**: extension.ts is getting large (338 lines)
 
 **Recommendation**: Extract command handlers into separate modules
+
 - `src/commands/addToIgnore.ts`
 - `src/commands/include.ts`
 - `src/commands/quickPick.ts`
@@ -547,6 +591,7 @@ export async function handleError(error: unknown, context: string): Promise<void
 ## 12. Priority Matrix
 
 ### High Priority (Immediate Impact)
+
 1. Enhanced status bar feedback with undo option
 2. Duplicate pattern detection and cleanup
 3. Confirmation dialog for mixed-state operations
@@ -554,6 +599,7 @@ export async function handleError(error: unknown, context: string): Promise<void
 5. Performance optimization for state updates
 
 ### Medium Priority (Quality of Life)
+
 1. First-run welcome experience
 2. File decorations in Explorer
 3. Extension settings for customization
@@ -561,6 +607,7 @@ export async function handleError(error: unknown, context: string): Promise<void
 5. Keyboard shortcuts
 
 ### Low Priority (Nice to Have)
+
 1. Import/export templates
 2. Smart suggestions
 3. Bulk operations
@@ -572,6 +619,7 @@ export async function handleError(error: unknown, context: string): Promise<void
 ## 13. Success Metrics
 
 Track these metrics to measure UX improvements:
+
 - Time to complete first ignore operation
 - Error rate in ignore operations
 - Feature discovery rate (% users using advanced features)
@@ -596,6 +644,7 @@ Implementing these suggestions will transform Confignore from a good utility int
 ---
 
 **Next Steps**:
+
 1. Review recommendations with stakeholders
 2. Prioritize based on user feedback and business goals
 3. Create implementation plan with milestones

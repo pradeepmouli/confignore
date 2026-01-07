@@ -23,30 +23,33 @@
    ```
 3. Save. Confignore immediately shows badges on matching files.
 
-**Result**: ✅ AI agents will be notified these files are excluded from context
+**Result**: ✅ Confignore will treat these files as excluded from AI context (and can expose this via badges + command API). Whether a specific AI tool respects this depends on that tool.
 
 #### Option B: Claude Agent Config (If using Claude)
 
 1. Create `.claude/settings.json` in project root
-2. Add:
+2. Add file read exclusions using permission deny rules:
    ```json
    {
-     "ignore": [
-       "node_modules/**",
-       ".git/**",
-       "*.log"
-     ]
+     "permissions": {
+       "deny": [
+         "Read(./node_modules/**)",
+         "Read(./.git/**)",
+         "Read(./*.log)"
+       ]
+     }
    }
    ```
-3. Save. Confignore detects and aggregates these patterns.
+3. Save. Confignore can detect and import these patterns.
 
-**Result**: ✅ Claude reads this config; Confignore shows both workspace and Claude patterns
+**Result**: ✅ Claude Code will deny reads per this config; Confignore can show both workspace and Claude-derived patterns
 
 #### Option C: Combine Both (Recommended)
 
 Workspace settings for project-wide rules + agent config for agent-specific rules:
 
 **`.vscode/settings.json`**:
+
 ```json
 {
   "confignore.aiIgnore": [
@@ -58,23 +61,27 @@ Workspace settings for project-wide rules + agent config for agent-specific rule
 ```
 
 **`.claude/settings.json`**:
+
 ```json
 {
-  "ignore": [
-    "node_modules/**",
-    "vendor/**",
-    ".git/"
-  ]
+  "permissions": {
+    "deny": [
+      "Read(./node_modules/**)",
+      "Read(./vendor/**)",
+      "Read(./.git/**)"
+    ]
+  }
 }
 ```
 
-**Result**: ✅ Patterns from both files aggregated and displayed together
+**Result**: ✅ Patterns from both sources aggregated and displayed together
 
 ---
 
 ### Common Patterns
 
 **Exclude secrets**:
+
 ```json
 {
   "confignore.aiIgnore": [
@@ -88,6 +95,7 @@ Workspace settings for project-wide rules + agent config for agent-specific rule
 ```
 
 **Exclude build artifacts**:
+
 ```json
 {
   "confignore.aiIgnore": [
@@ -102,6 +110,7 @@ Workspace settings for project-wide rules + agent config for agent-specific rule
 ```
 
 **Exclude dependencies**:
+
 ```json
 {
   "confignore.aiIgnore": [
@@ -114,6 +123,7 @@ Workspace settings for project-wide rules + agent config for agent-specific rule
 ```
 
 **Exclude system files**:
+
 ```json
 {
   "confignore.aiIgnore": [
@@ -127,6 +137,7 @@ Workspace settings for project-wide rules + agent config for agent-specific rule
 ```
 
 **Exclude large data files** (speeds up AI context):
+
 ```json
 {
   "confignore.aiIgnore": [
@@ -144,14 +155,17 @@ Workspace settings for project-wide rules + agent config for agent-specific rule
 ### Checking What's Ignored
 
 **VS Code UI**:
+
 1. Open file explorer
 2. Look for badge on files/folders (🤖 icon overlay)
 3. Hover over badge → tooltip shows "Ignored for AI agents"
 
 **Command (Future)**:
+
 ```
 Confignore: Check AI Ignore Status
 ```
+
 Shows which patterns matched a selected file.
 
 ---
@@ -160,17 +174,18 @@ Shows which patterns matched a selected file.
 
 Based on gitignore syntax (familiar if you use `.gitignore`):
 
-| Pattern | Matches |
-|---------|---------|
-| `*.env` | All files ending in `.env` (anywhere in tree) |
-| `secrets/` | All `secrets` directories |
-| `node_modules/**` | Everything inside `node_modules` |
-| `/root_only` | File/folder at project root only |
-| `**/*.log` | Any `.log` file in any subdirectory |
-| `!important.js` | **Exception**: Include this despite other excludes |
-| `dir/**/*.test.js` | Test files in `dir` and subdirectories |
+| Pattern            | Matches                                            |
+| ------------------ | -------------------------------------------------- |
+| `*.env`            | All files ending in `.env` (anywhere in tree)      |
+| `secrets/`         | All `secrets` directories                          |
+| `node_modules/**`  | Everything inside `node_modules`                   |
+| `/root_only`       | File/folder at project root only                   |
+| `**/*.log`         | Any `.log` file in any subdirectory                |
+| `!important.js`    | **Exception**: Include this despite other excludes |
+| `dir/**/*.test.js` | Test files in `dir` and subdirectories             |
 
 **Tips**:
+
 - Use `/` at start to anchor to workspace root
 - Use `**` to match any nested path
 - Use `!` to create exceptions
@@ -183,6 +198,7 @@ Based on gitignore syntax (familiar if you use `.gitignore`):
 **Issue**: File has no badge, but I added pattern
 
 **Solution**:
+
 1. Check pattern syntax (see table above)
 2. Verify file matches pattern (e.g., `*.env` won't match `config.yaml`)
 3. Reload window: Cmd+Shift+P → "Reload Window"
@@ -190,6 +206,7 @@ Based on gitignore syntax (familiar if you use `.gitignore`):
 **Issue**: Badge shows but pattern doesn't seem to work
 
 **Solution**:
+
 1. Check tooltip (hover badge) to see which pattern matched
 2. Pattern matched correctly; AI agent may not respect extension settings
 3. Contact AI tool support if it ignores `.claude/settings.json` or similar
@@ -197,6 +214,7 @@ Based on gitignore syntax (familiar if you use `.gitignore`):
 **Issue**: Too many badges; need to exclude more files
 
 **Solution**:
+
 1. Use wildcard patterns: `**/*.tmp` instead of listing files
 2. Exclude directories: `build/`, `dist/` instead of individual files
 3. Use negation to refine: `!important.js` to allow exceptions
@@ -221,13 +239,12 @@ Based on gitignore syntax (familiar if you use `.gitignore`):
 └────────────────────────────────────────┘
          ↓
 ┌────────────────────────────────────────┐
-│  AI Agents (Claude, Copilot, etc.)    │
+│  AI Tools / Extensions                 │
 ├────────────────────────────────────────┤
 │                                        │
-│  1. Read agent config files            │
-│  2. Read VS Code extension settings    │
-│  3. Respect confignore.aiIgnore        │
-│  4. Query via confignore.isIgnoredForAI│
+│  1. May read agent config files        │
+│  2. May query confignore.isIgnoredForAI│
+│  3. May respect confignore.aiIgnore    │
 │                                        │
 └────────────────────────────────────────┘
 ```
@@ -259,6 +276,7 @@ if (!ignored) {
 ```
 
 **Command Signature**:
+
 ```
 confignore.isIgnoredForAI(fileUri: Uri): Promise<boolean>
 ```
@@ -272,13 +290,14 @@ Returns `true` if file matches any AI ignore pattern, `false` otherwise.
 **To add support for new AI agent config format**:
 
 1. Add to `agentConfigDetector.ts`:
+
    ```typescript
    async function detectNewAgentConfig(workspaceUri: Uri): Promise<AiIgnorePattern[]> {
      const configPath = vscode.Uri.joinPath(workspaceUri, '.newagent/config.json');
      try {
        const file = await vscode.workspace.fs.readFile(configPath);
        const config = JSON.parse(file.toString());
-       return config.ignorePatterns || [];
+       return Array.isArray(config.aiIgnore) ? config.aiIgnore : [];
      } catch {
        return [];  // Config not found or parse error
      }
@@ -286,11 +305,12 @@ Returns `true` if file matches any AI ignore pattern, `false` otherwise.
    ```
 
 2. Call in main detection function:
+
    ```typescript
    const allPatterns = [
      ...workspaceSettingsPatterns,
      ...claudePatterns,
-     ...copilotPatterns,
+     ...geminiPatterns,
      ...detectNewAgentConfig(workspaceUri)  // Add this
    ];
    ```
@@ -312,9 +332,10 @@ Returns `true` if file matches any AI ignore pattern, `false` otherwise.
 ```
 
 **Listeners registered**:
+
 1. `onDidChangeConfiguration` → Invalidate cache, refresh badges
 2. `FileSystemWatcher(.claude/settings.json)` → Re-parse Claude config
-3. `FileSystemWatcher(.copilotignore)` → Re-parse Copilot config
+3. `FileSystemWatcher(.aiexclude)` → Re-parse Gemini config
 4. `onDidChangeTextEditors` → Update UI decorations
 
 ---
@@ -322,20 +343,24 @@ Returns `true` if file matches any AI ignore pattern, `false` otherwise.
 ### Performance Expectations
 
 **Configuration Load Time**:
+
 - Small projects (< 100 files): ~10ms
 - Medium projects (100–1k files): ~20ms
 - Large projects (1k–10k files): ~50ms
 - Very large projects (10k+ files): ~100–200ms
 
 **Pattern Evaluation Per-File**:
+
 - First evaluation: ~1ms (including validation)
 - Cached evaluation: <0.01ms (hash lookup)
 
 **Badge Rendering**:
+
 - Initial render: 50–100ms
 - Incremental (on config change): 20–50ms
 
 **Memory Overhead**:
+
 - Cache (1000 entries): ~100KB
 - Config parsing: ~50KB
 - Total: <200KB overhead
@@ -347,6 +372,7 @@ Returns `true` if file matches any AI ignore pattern, `false` otherwise.
 **Manual Testing Steps**:
 
 1. Create test project:
+
    ```bash
    mkdir test-ai-ignore
    cd test-ai-ignore
@@ -354,6 +380,7 @@ Returns `true` if file matches any AI ignore pattern, `false` otherwise.
    ```
 
 2. Create config:
+
    ```json
    // .vscode/settings.json
    {
@@ -365,6 +392,7 @@ Returns `true` if file matches any AI ignore pattern, `false` otherwise.
    ```
 
 3. Create test files:
+
    ```bash
    touch file.env
    mkdir secrets
@@ -377,6 +405,7 @@ Returns `true` if file matches any AI ignore pattern, `false` otherwise.
 6. Verify no badge on `normal.js`
 
 **Automated Testing**:
+
 - Unit tests for pattern matching (reuse feature 001 tests)
 - Unit tests for config detection and parsing
 - Integration tests for command API
@@ -398,8 +427,9 @@ Returns `true` if file matches any AI ignore pattern, `false` otherwise.
 **Q: Do AI agents automatically use Confignore?**
 
 A: Depends on the agent:
-- Claude: Yes (reads `.claude/settings.json`)
-- GitHub Copilot: Partially (reads `.copilotignore`)
+
+- Claude Code: Yes (can be configured to deny file reads via `.claude/settings.json`)
+- GitHub Copilot: Not via a repo ignore file; “content exclusion” is configured in GitHub settings (remote), and GitHub documents limitations for IDE Agent mode / Copilot CLI / Copilot coding agent
 - ChatGPT: Not yet (future extension)
 - Custom agents: Can use `confignore.isIgnoredForAI` command
 
@@ -408,6 +438,7 @@ Confignore's role: Display what's ignored + provide API for other tools.
 **Q: Can I exclude more files than gitignore?**
 
 A: Yes! AI ignore is independent from gitignore. You can:
+
 - Include files in git but exclude from AI: `!.env` in git, but in aiIgnore
 - Exclude more from AI than git: More patterns in aiIgnore
 - Different exclusions per context: Freedom to manage separately
@@ -415,6 +446,7 @@ A: Yes! AI ignore is independent from gitignore. You can:
 **Q: How often are patterns re-evaluated?**
 
 A: Continuously as you edit:
+
 - After saving config file
 - After changing workspace settings
 - Cached results used to keep UI responsive (<100ms)
@@ -426,6 +458,7 @@ A: No, only glob patterns (like gitignore). Glob is simpler, faster, and familia
 **Q: Performance impact on large projects?**
 
 A: Minimal with caching:
+
 - First decoration: 50–100ms
 - Updates: 20–50ms
 - Queries: <50ms
