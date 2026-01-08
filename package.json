@@ -1,7 +1,7 @@
 {
   "name": "confignore",
   "displayName": "Confignore",
-  "version": "0.0.3",
+  "version": "0.1.0",
   "description": "Add files and folders to ignore files via context menu",
   "categories": [
     "Other"
